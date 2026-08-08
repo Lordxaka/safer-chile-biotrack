@@ -339,7 +339,7 @@ EJEMPLOS:
         """
     )
     parser.add_argument("--cantidad", type=int, default=50, help="Cantidad de QR (default: 50)")
-    parser.add_argument("--url-base", type=str, default="https://saferchile.cl/app", help="URL base")
+    parser.add_argument("--url-base", type=str, default="https://lordxaka.github.io/safer-chile-biotrack/", help="URL base")
     parser.add_argument("--isotipo", type=str, default="isotipo_safer_chile_clean.png",
                         help="Ruta al isotipo (PNG transparente) para centro del QR")
     parser.add_argument("--logo-horizontal", type=str, default=None,

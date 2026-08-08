@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a6b7a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Safer Chile - Control de Cargas Biológicas con georeferenciación">
+    <title>Safer Chile | Control de Cargas Biológicas</title>
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU2FmZXIgQ2hpbGUiLCJzaG9ydF9uYW1lIjoiU2FmZXJDaGlsZSIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjZmZmZmZmIiwidGhlbWVfY29sb3IiOiIjMWE2YjdhIn0=">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --safer-teal: #1a6b7a;
+            --safer-teal-light: #2a8fa3;
+            --safer-teal-dark: #0d4a55;
+            --safer-accent: #e8b931;
+            --danger: #c0392b;
+            --warning: #f39c12;
+            --info: #2980b9;
+            --success: #27ae60;
+            --bg: #f4f7f8;
+            --card: #ffffff;
+            --text: #1a1a1a;
+            --text-light: #666;
+            --border: #e0e0e0;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            overflow-x: hidden; padding-bottom: 70px;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes alertPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(231,76,60,0.4); } 50% { box-shadow: 0 0 0 15px rgba(231,76,60,0); } }
+        @keyframes scanLine { 0% { top: 0; } 100% { top: 100%; } }
+        @keyframes gpsPulse { 0% { box-shadow: 0 0 0 0 rgba(26,107,122,0.4); } 50% { box-shadow: 0 0 0 12px rgba(26,107,122,0); } 100% { box-shadow: 0 0 0 0 rgba(26,107,122,0); } }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        .slide-in { animation: slideIn 0.3s ease-out; }
+
+        /* HEADER SAFER CHILE */
+        .app-header {
+            background: linear-gradient(135deg, var(--safer-teal) 0%, var(--safer-teal-light) 100%);
+            color: white; padding: 16px 20px; position: sticky; top: 0; z-index: 100;
+            box-shadow: var(--shadow);
+        }
+        .app-header .brand {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .app-header .brand-icon {
+            width: 42px; height: 42px; background: white; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; color: var(--safer-teal); font-size: 1.1rem;
+        }
+        .app-header h1 { font-size: 1.2rem; font-weight: 700; }
+        .app-header .subtitle { font-size: 0.7rem; opacity: 0.9; margin-top: 2px; letter-spacing: 0.5px; }
+        .header-actions { display: flex; gap: 10px; margin-top: 10px; }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px 24px; border: none; border-radius: 12px; font-size: 0.95rem;
+            font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; font-family: inherit;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--safer-teal); color: white; }
+        .btn-primary:hover { background: var(--safer-teal-light); }
+        .btn-accent { background: var(--safer-accent); color: #1a1a1a; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-info { background: var(--info); color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--safer-teal); color: var(--safer-teal); }
+        .btn-outline:hover { background: var(--safer-teal); color: white; }
+        .btn-ghost { background: rgba(255,255,255,0.15); color: white; }
+        .btn-ghost:hover { background: rgba(255,255,255,0.25); }
+        .btn-lg { padding: 16px 32px; font-size: 1.1rem; }
+        .btn-sm { padding: 8px 16px; font-size: 0.85rem; }
+        .btn-block { width: 100%; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .card {
+            background: var(--card); border-radius: 16px; padding: 20px;
+            box-shadow: var(--shadow); margin-bottom: 16px;
+        }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .card-title { font-size: 1.1rem; font-weight: 700; color: var(--safer-teal-dark); }
+        .card-subtitle { font-size: 0.85rem; color: var(--text-light); margin-top: 4px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-light); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-input, .form-select, .form-textarea {
+            width: 100%; padding: 12px 16px; border: 2px solid var(--border);
+            border-radius: 12px; font-size: 1rem; font-family: inherit; transition: border-color 0.2s; background: white;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--safer-teal-light); }
+        .form-textarea { min-height: 80px; resize: vertical; }
+        .form-input:read-only, .form-textarea:read-only { background: #f8f8f8; color: var(--text-light); }
+
+        .scanner-container {
+            position: relative; border-radius: 16px; overflow: hidden;
+            background: #000; aspect-ratio: 1; max-width: 400px; margin: 0 auto;
+        }
+        .scanner-overlay {
+            position: absolute; inset: 0; pointer-events: none;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .scanner-frame {
+            width: 70%; height: 70%; border: 3px solid var(--safer-accent);
+            border-radius: 20px; position: relative;
+        }
+        .scanner-frame::before, .scanner-frame::after {
+            content: ''; position: absolute; width: 20px; height: 20px;
+            border-color: var(--safer-accent); border-style: solid;
+        }
+        .scanner-frame::before { top: -3px; left: -3px; border-width: 4px 0 0 4px; }
+        .scanner-frame::after { bottom: -3px; right: -3px; border-width: 0 4px 4px 0; }
+        .scan-line {
+            position: absolute; left: 0; right: 0; height: 2px;
+            background: var(--safer-accent); box-shadow: 0 0 10px var(--safer-accent);
+            animation: scanLine 2s linear infinite;
+        }
+        .scanner-hint {
+            position: absolute; bottom: 20px; left: 0; right: 0;
+            text-align: center; color: white; font-size: 0.9rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 20px; font-size: 0.8rem;
+            font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .status-disponible { background: #e8f5e9; color: var(--success); }
+        .status-enviado { background: #fff3e0; color: var(--warning); animation: pulse 2s infinite; }
+        .status-transito { background: #e3f2fd; color: var(--info); }
+        .status-entregado { background: #f3e5f5; color: #7b1fa2; }
+
+        .alert {
+            padding: 16px 20px; border-radius: 12px; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 12px; font-weight: 500;
+        }
+        .alert-warning { background: #fff8e1; color: #f57f17; border-left: 4px solid var(--warning); }
+        .alert-info { background: #e3f2fd; color: #1565c0; border-left: 4px solid var(--info); }
+        .alert-success { background: #e8f5e9; color: #2e7d32; border-left: 4px solid var(--success); }
+        .alert-danger { background: #ffebee; color: #c62828; border-left: 4px solid var(--danger); animation: alertPulse 2s infinite; }
+
+        .timeline { position: relative; padding-left: 30px; }
+        .timeline::before {
+            content: ''; position: absolute; left: 10px; top: 0; bottom: 0;
+            width: 2px; background: var(--border);
+        }
+        .timeline-item { position: relative; padding-bottom: 24px; }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -26px; top: 2px;
+            width: 14px; height: 14px; border-radius: 50%; background: var(--border);
+            border: 3px solid white; box-shadow: 0 0 0 2px var(--border);
+        }
+        .timeline-item.active::before { background: var(--safer-teal); box-shadow: 0 0 0 2px var(--safer-teal); }
+        .timeline-item.completed::before { background: var(--success); box-shadow: 0 0 0 2px var(--success); }
+        .timeline-time { font-size: 0.75rem; color: var(--text-light); }
+        .timeline-title { font-weight: 600; margin-top: 2px; }
+        .timeline-desc { font-size: 0.85rem; color: var(--text-light); margin-top: 2px; }
+
+        .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .metric-card {
+            background: linear-gradient(135deg, var(--safer-teal) 0%, var(--safer-teal-light) 100%);
+            color: white; padding: 16px; border-radius: 12px; text-align: center;
+        }
+        .metric-value { font-size: 1.8rem; font-weight: 700; }
+        .metric-label { font-size: 0.75rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .toast-container {
+            position: fixed; top: 80px; right: 20px; z-index: 1001;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .toast {
+            padding: 14px 20px; border-radius: 12px; color: white;
+            font-weight: 500; box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease-out; max-width: 320px;
+        }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-info { background: var(--info); }
+
+        .carga-item {
+            display: flex; align-items: center; gap: 12px; padding: 14px;
+            border-radius: 12px; background: #fafafa; margin-bottom: 8px;
+            cursor: pointer; transition: all 0.2s; border: 2px solid transparent;
+        }
+        .carga-item:hover { border-color: var(--safer-teal-light); background: #f0f7f8; }
+        .carga-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--safer-teal); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+        .carga-info { flex: 1; min-width: 0; }
+        .carga-id { font-weight: 600; font-size: 0.95rem; }
+        .carga-meta { font-size: 0.8rem; color: var(--text-light); margin-top: 2px; }
+
+        /* GPS / Georeferenciación */
+        .gps-card {
+            background: linear-gradient(135deg, #1a6b7a 0%, #2a8fa3 100%);
+            color: white; padding: 16px; border-radius: 16px; margin-bottom: 16px;
+        }
+        .gps-card .gps-header {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+        }
+        .gps-dot {
+            width: 14px; height: 14px; border-radius: 50%; background: #4ade80;
+            animation: gpsPulse 2s infinite;
+        }
+        .gps-dot.off { background: #ef4444; animation: none; }
+        .gps-coords {
+            font-family: 'SF Mono', monospace; font-size: 0.85rem; opacity: 0.9;
+            background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 8px;
+        }
+        .gps-map {
+            width: 100%; height: 200px; border-radius: 12px; background: #e0e0e0;
+            margin-top: 12px; overflow: hidden;
+        }
+        .gps-map iframe { width: 100%; height: 100%; border: none; border-radius: 12px; }
+
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; border-top: 1px solid var(--border);
+            display: flex; justify-content: space-around; padding: 8px 0;
+            z-index: 100; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 4px; padding: 6px 16px; border: none; background: none;
+            color: var(--text-light); font-size: 0.7rem; cursor: pointer;
+            transition: color 0.2s; font-family: inherit;
+        }
+        .nav-item.active { color: var(--safer-teal); }
+        .nav-item svg { width: 24px; height: 24px; }
+
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+        .mt-2 { margin-top: 8px; }
+        .mt-3 { margin-top: 12px; }
+        .mt-4 { margin-top: 16px; }
+
+        @media (max-width: 480px) {
+            .container { padding: 12px; }
+            .card { padding: 16px; border-radius: 12px; }
+            .app-header h1 { font-size: 1.1rem; }
+            .metrics-grid { grid-template-columns: 1fr; }
+            .btn-lg { padding: 14px 24px; font-size: 1rem; }
+        }
+        @media print {
+            .app-header, .bottom-nav, .btn, .no-print { display: none !important; }
+            body { background: white; padding-bottom: 0; }
+            .card { box-shadow: none; border: 1px solid #ddd; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toast-container" id="toastContainer"></div>
+
+    <header class="app-header">
+        <div class="brand">
+            <div class="brand-icon">S</div>
+            <div>
+                <h1>SAFER CHILE</h1>
+                <div class="subtitle">CONTROL DE CARGAS BIOLOGICAS</div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-ghost btn-sm" onclick="app.goHome()">🏠 Inicio</button>
+            <button class="btn btn-ghost btn-sm" onclick="app.showMetrics()">📊 Metricas</button>
+        </div>
+    </header>
+
+    <main class="container" id="mainContent">
+        <!-- Pantalla de Inicio / Escaner -->
+        <div id="screenHome" class="fade-in">
+            <div class="card text-center">
+                <div style="font-size: 3rem; margin-bottom: 12px;">📷</div>
+                <h2 style="margin-bottom: 8px;">Escanear Codigo QR</h2>
+                <p style="color: var(--text-light); margin-bottom: 20px;">Acerca la camara al codigo de la carga biologica</p>
+                <div class="scanner-container" id="scannerContainer">
+                    <div id="reader" style="width: 100%; height: 100%;"></div>
+                    <div class="scanner-overlay">
+                        <div class="scanner-frame">
+                            <div class="scan-line"></div>
+                        </div>
+                    </div>
+                    <div class="scanner-hint">Centra el QR en el marco</div>
+                </div>
+                <div class="mt-4">
+                    <button class="btn btn-outline btn-block" onclick="app.stopScanner(); app.showManualEntry()">
+                        ✏️ Ingresar ID Manualmente
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">📦 Cargas Recientes</div>
+                        <div class="card-subtitle">Ultimas cargas registradas</div>
+                    </div>
+                    <button class="btn btn-sm btn-outline" onclick="app.showAllCargas()">Ver Todo</button>
+                </div>
+                <div id="recentCargasList"></div>
+            </div>
+        </div>
+
+        <!-- Pantalla: Ingreso Manual -->
+        <div id="screenManualEntry" class="hidden fade-in">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">✏️ Ingresar ID de Carga</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ID de la Carga</label>
+                    <input type="text" class="form-input" id="manualIdInput" placeholder="Ej: BIO-000001" style="text-transform: uppercase;">
+                </div>
+                <button class="btn btn-primary btn-block btn-lg" onclick="app.buscarPorId()">
+                    🔍 Buscar Carga
+                </button>
+                <button class="btn btn-outline btn-block mt-3" onclick="app.goHome()">
+                    ← Volver al Escaner
+                </button>
+            </div>
+        </div>
+
+        <!-- Pantalla: Remitente -->
+        <div id="screenRemitente" class="hidden fade-in">
+            <div class="alert alert-warning">
+                <span style="font-size: 1.5rem;">📦</span>
+                <div>
+                    <strong>Modo Remitente</strong><br>
+                    Completa los datos de la carga y activa el envio
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Informacion de la Carga</div>
+                        <div class="card-subtitle" id="remIdCarga"></div>
+                    </div>
+                    <span class="status-badge status-disponible" id="remStatusBadge">Disponible</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tipo de Carga Biologica *</label>
+                    <select class="form-select" id="remTipoCarga">
+                        <option value="">Selecciona el tipo...</option>
+                        <option value="sangre">Sangre / Derivados</option>
+                        <option value="tejidos">Tejidos / Organos</option>
+                        <option value="vacunas">Vacunas / Biologicos</option>
+                        <option value="muestras">Muestras de Laboratorio</option>
+                        <option value="celulas">Celulas / Cultivos</option>
+                        <option value="otros">Otros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripcion Detallada *</label>
+                    <textarea class="form-textarea" id="remDescripcion" placeholder="Describe el contenido de la carga, cantidad, condiciones especiales..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Temperatura Requerida (°C)</label>
+                    <input type="text" class="form-input" id="remTemperatura" placeholder="Ej: 2-8°C">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Condiciones Especiales</label>
+                    <textarea class="form-textarea" id="remCondiciones" placeholder="Fragil, mantener upright, no congelar, etc."></textarea>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 16px;">Datos del Remitente</div>
+                <div class="form-group">
+                    <label class="form-label">Nombre Completo *</label>
+                    <input type="text" class="form-input" id="remNombreRemitente" placeholder="Nombre del responsable que envia">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Institucion / Centro *</label>
+                    <input type="text" class="form-input" id="remInstitucion" placeholder="Hospital, clinica, laboratorio...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Telefono de Contacto</label>
+                    <input type="tel" class="form-input" id="remTelefonoRemitente" placeholder="+56 9 XXXX XXXX">
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 16px;">Datos del Transporte</div>
+                <div class="form-group">
+                    <label class="form-label">Empresa de Transporte *</label>
+                    <input type="text" class="form-input" id="remTransporte" placeholder="Nombre de la empresa transportista">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nombre del Conductor</label>
+                    <input type="text" class="form-input" id="remConductor" placeholder="Nombre del conductor asignado">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Patente del Vehiculo</label>
+                    <input type="text" class="form-input" id="remPatente" placeholder="XX-XX-XX">
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 16px;">Datos del Destinatario</div>
+                <div class="form-group">
+                    <label class="form-label">Nombre del Destinatario *</label>
+                    <input type="text" class="form-input" id="remNombreDestino" placeholder="Quien recibira la carga">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Institucion Destino *</label>
+                    <input type="text" class="form-input" id="remInstitucionDestino" placeholder="Hospital, clinica, laboratorio destino...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Direccion de Entrega</label>
+                    <input type="text" class="form-input" id="remDireccionDestino" placeholder="Direccion completa de entrega">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Telefono Destinatario</label>
+                    <input type="tel" class="form-input" id="remTelefonoDestino" placeholder="+56 9 XXXX XXXX">
+                </div>
+            </div>
+
+            <button class="btn btn-accent btn-block btn-lg" onclick="app.activarEnvio()" id="btnActivarEnvio">
+                🚀 Activar Envio
+            </button>
+            <button class="btn btn-outline btn-block mt-3" onclick="app.goHome()">
+                ← Cancelar y Volver
+            </button>
+        </div>
+
+        <!-- Pantalla: Transporte -->
+        <div id="screenTransporte" class="hidden fade-in">
+            <div class="alert alert-danger" id="transporteAlert">
+                <span style="font-size: 1.5rem;">🚨</span>
+                <div>
+                    <strong>¡Alerta de Envio!</strong><br>
+                    Tienes una carga lista para recoleccion
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Panel de Transporte</div>
+                        <div class="card-subtitle" id="transIdCarga"></div>
+                    </div>
+                    <span class="status-badge status-enviado" id="transStatusBadge">Enviado - Esperando Recoleccion</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Detalle de Carga</label>
+                    <textarea class="form-textarea" id="transDetalle" readonly></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Remitente</label>
+                    <input type="text" class="form-input" id="transRemitente" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Destinatario</label>
+                    <input type="text" class="form-input" id="transDestino" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Direccion de Entrega</label>
+                    <input type="text" class="form-input" id="transDireccion" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Temperatura Requerida</label>
+                    <input type="text" class="form-input" id="transTemperatura" readonly>
+                </div>
+            </div>
+
+            <!-- GPS / Georeferenciacion para Transporte -->
+            <div class="gps-card">
+                <div class="gps-header">
+                    <div class="gps-dot" id="gpsDot"></div>
+                    <div>
+                        <div style="font-weight: 700;">📍 Georeferenciacion</div>
+                        <div style="font-size: 0.8rem; opacity: 0.9;">Comparte tu ubicacion en tiempo real</div>
+                    </div>
+                </div>
+                <div class="gps-coords" id="gpsCoords">Esperando permiso de ubicacion...</div>
+                <button class="btn btn-success btn-block mt-3" onclick="app.iniciarGPS()" id="btnGPS">
+                    🛰️ Activar GPS y Compartir Ubicacion
+                </button>
+                <div class="gps-map hidden" id="gpsMap">
+                    <iframe id="gpsIframe" src="" allowfullscreen></iframe>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 16px;">Confirmar Recoleccion</div>
+                <div class="form-group">
+                    <label class="form-label">Nombre del Conductor que Recoge *</label>
+                    <input type="text" class="form-input" id="transConductorConfirma" placeholder="Confirma tu nombre">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Patente del Vehiculo *</label>
+                    <input type="text" class="form-input" id="transPatenteConfirma" placeholder="Patente del vehiculo que transporta">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Observaciones</label>
+                    <textarea class="form-textarea" id="transObservaciones" placeholder="Estado de la caja, sellos, temperatura al recoger..."></textarea>
+                </div>
+            </div>
+
+            <button class="btn btn-success btn-block btn-lg" onclick="app.confirmarRecoleccion()" id="btnConfirmarRecoleccion">
+                ✅ Confirmar Recoleccion - Iniciar Transito
+            </button>
+            <button class="btn btn-outline btn-block mt-3" onclick="app.goHome()">
+                ← Volver al Inicio
+            </button>
+        </div>
+
+        <!-- Pantalla: En Transito -->
+        <div id="screenTransito" class="hidden fade-in">
+            <div class="alert alert-info">
+                <span style="font-size: 1.5rem;">🚛</span>
+                <div>
+                    <strong>Carga en Transito</strong><br>
+                    La carga esta siendo transportada en este momento
+                </div>
+            </div>
+
+            <!-- GPS en Transito -->
+            <div class="gps-card">
+                <div class="gps-header">
+                    <div class="gps-dot" id="gpsDotTransito"></div>
+                    <div>
+                        <div style="font-weight: 700;">📍 Rastreo GPS Activo</div>
+                        <div style="font-size: 0.8rem; opacity: 0.9;">Ubicacion del transporte en tiempo real</div>
+                    </div>
+                </div>
+                <div class="gps-coords" id="gpsCoordsTransito">Sin datos de ubicacion</div>
+                <div class="gps-map" id="gpsMapTransito">
+                    <iframe id="gpsIframeTransito" src="" allowfullscreen></iframe>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Seguimiento en Vivo</div>
+                        <div class="card-subtitle" id="transitoIdCarga"></div>
+                    </div>
+                    <span class="status-badge status-transito">En Transito</span>
+                </div>
+                <div class="timeline" id="transitoTimeline"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 16px;">Resumen de la Carga</div>
+                <div class="form-group">
+                    <label class="form-label">Tipo de Carga</label>
+                    <input type="text" class="form-input" id="transitoTipo" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripcion</label>
+                    <textarea class="form-textarea" id="transitoDescripcion" readonly></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Transportista</label>
+                    <input type="text" class="form-input" id="transitoTransporte" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Conductor</label>
+                    <input type="text" class="form-input" id="transitoConductor" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Patente</label>
+                    <input type="text" class="form-input" id="transitoPatente" readonly>
+                </div>
+            </div>
+
+            <div class="card" id="transitoDestinatarioCard">
+                <div class="card-title" style="margin-bottom: 16px;">Panel del Destinatario</div>
+                <p style="color: var(--text-light); margin-bottom: 16px;">
+                    Cuando recibas la carga, escanea el QR para confirmar la entrega.
+                </p>
+                <button class="btn btn-primary btn-block btn-lg" onclick="app.confirmarRecepcion()">
+                    📷 Confirmar Recepcion
+                </button>
+            </div>
+
+            <button class="btn btn-outline btn-block mt-3" onclick="app.goHome()">
+                ← Volver al Inicio
+            </button>
+        </div>
+
+        <!-- Pantalla: Destinatario (Entregado) -->
+        <div id="screenDestinatario" class="hidden fade-in">
+            <div class="alert alert-success">
+                <span style="font-size: 1.5rem;">✅</span>
+                <div>
+                    <strong>¡Carga Entregada!</strong><br>
+                    La carga ha sido recibida exitosamente
+                </div>
+            </div>
+
+            <!-- Ruta GPS final -->
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 16px;">🗺️ Ruta del Transporte</div>
+                <div class="gps-map" style="height: 250px;">
+                    <iframe id="gpsIframeFinal" src="" allowfullscreen></iframe>
+                </div>
+                <div style="margin-top: 12px; font-size: 0.85rem; color: var(--text-light);">
+                    <strong>Puntos de rastreo:</strong> <span id="gpsPuntosCount">0</span> registros
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Detalle de Carga</div>
+                        <div class="card-subtitle" id="destIdCarga"></div>
+                    </div>
+                    <span class="status-badge status-entregado">Entregado</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tipo de Carga</label>
+                    <input type="text" class="form-input" id="destTipo" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripcion Completa</label>
+                    <textarea class="form-textarea" id="destDescripcion" readonly style="min-height: 100px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Temperatura Requerida</label>
+                    <input type="text" class="form-input" id="destTemperatura" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Condiciones Especiales</label>
+                    <textarea class="form-textarea" id="destCondiciones" readonly></textarea>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 16px;">Metricas de Envio</div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="metricTiempoTransito">--</div>
+                        <div class="metric-label">Tiempo de Transito</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="metricTiempoTotal">--</div>
+                        <div class="metric-label">Tiempo Total</div>
+                    </div>
+                </div>
+                <div style="margin-top: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Fecha y Hora de Envio</label>
+                        <input type="text" class="form-input" id="destFechaEnvio" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fecha y Hora de Entrega</label>
+                        <input type="text" class="form-input" id="destFechaEntrega" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 16px;">Informacion del Transporte</div>
+                <div class="form-group">
+                    <label class="form-label">Empresa Transportista</label>
+                    <input type="text" class="form-input" id="destTransporte" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Conductor</label>
+                    <input type="text" class="form-input" id="destConductor" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Patente del Vehiculo</label>
+                    <input type="text" class="form-input" id="destPatente" readonly>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 16px;">Informacion del Remitente</div>
+                <div class="form-group">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" class="form-input" id="destRemitente" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Institucion</label>
+                    <input type="text" class="form-input" id="destInstitucionRem" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Telefono</label>
+                    <input type="text" class="form-input" id="destTelefonoRem" readonly>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 16px;">Informacion de Recepcion</div>
+                <div class="form-group">
+                    <label class="form-label">Recibido por</label>
+                    <input type="text" class="form-input" id="destRecibidoPor" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Institucion Destino</label>
+                    <input type="text" class="form-input" id="destInstitucion" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Direccion de Entrega</label>
+                    <input type="text" class="form-input" id="destDireccion" readonly>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 16px;">Timeline Completo</div>
+                <div class="timeline" id="destTimeline"></div>
+            </div>
+
+            <button class="btn btn-outline btn-block mt-3" onclick="app.goHome()">
+                ← Volver al Inicio
+            </button>
+        </div>
+
+        <!-- Pantalla: Metricas -->
+        <div id="screenMetrics" class="hidden fade-in">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Dashboard de Metricas</div>
+                        <div class="card-subtitle">Estadisticas de transporte de cargas</div>
+                    </div>
+                </div>
+
+                <div class="metrics-grid" style="margin-bottom: 20px;">
+                    <div class="metric-card">
+                        <div class="metric-value" id="dashTotal">0</div>
+                        <div class="metric-label">Total Cargas</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="dashEntregadas">0</div>
+                        <div class="metric-label">Entregadas</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="dashTransito">0</div>
+                        <div class="metric-label">En Transito</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="dashPromedio">0h</div>
+                        <div class="metric-label">Tiempo Promedio</div>
+                    </div>
+                </div>
+
+                <div style="height: 250px; margin-bottom: 20px;">
+                    <canvas id="chartStatus"></canvas>
+                </div>
+                <div style="height: 250px;">
+                    <canvas id="chartTiempo"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Todas las Cargas</div>
+                </div>
+                <div id="allCargasList"></div>
+            </div>
+
+            <button class="btn btn-outline btn-block mt-3" onclick="app.goHome()">
+                ← Volver al Inicio
+            </button>
+        </div>
+
+        <!-- Pantalla: Lista Completa -->
+        <div id="screenAllCargas" class="hidden fade-in">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Todas las Cargas</div>
+                </div>
+                <div id="fullCargasList"></div>
+            </div>
+            <button class="btn btn-outline btn-block mt-3" onclick="app.goHome()">
+                ← Volver al Inicio
+            </button>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="app.goHome()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            Inicio
+        </button>
+        <button class="nav-item" onclick="app.showAllCargas()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            Cargas
+        </button>
+        <button class="nav-item" onclick="app.showMetrics()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            Metricas
+        </button>
+        <button class="nav-item" onclick="app.exportData()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Exportar
+        </button>
+    </nav>
+
+<script>
+const app = {
+    scanner: null,
+    currentCarga: null,
+    charts: {},
+    gpsWatchId: null,
+    gpsRuta: [],
+
+    init() {
+        this.initStorage();
+        this.renderRecentCargas();
+        this.startScanner();
+        const params = new URLSearchParams(window.location.search);
+        const cargaId = params.get('carga');
+        if (cargaId) {
+            setTimeout(() => this.handleCarga(cargaId.toUpperCase()), 500);
+        }
+    },
+
+    initStorage() {
+        if (!localStorage.getItem('biotrack_cargas')) {
+            localStorage.setItem('biotrack_cargas', JSON.stringify({}));
+        }
+        if (!localStorage.getItem('biotrack_gps')) {
+            localStorage.setItem('biotrack_gps', JSON.stringify({}));
+        }
+    },
+
+    getCargas() { return JSON.parse(localStorage.getItem('biotrack_cargas') || '{}'); },
+    saveCarga(id, data) {
+        const cargas = this.getCargas(); cargas[id] = data;
+        localStorage.setItem('biotrack_cargas', JSON.stringify(cargas));
+    },
+    getCarga(id) { return this.getCargas()[id] || null; },
+    createCarga(id) {
+        const cargas = this.getCargas();
+        if (!cargas[id]) {
+            cargas[id] = {
+                id: id, estado: 'disponible', creado: new Date().toISOString(),
+                historial: [{ fecha: new Date().toISOString(), accion: 'Codigo QR generado y disponible', actor: 'Sistema' }]
+            };
+            localStorage.setItem('biotrack_cargas', JSON.stringify(cargas));
+        }
+        return cargas[id];
+    },
+
+    // ==================== GPS / GEOREFERENCIACION ====================
+    iniciarGPS() {
+        if (!navigator.geolocation) {
+            this.showToast('Geolocalizacion no soportada en este dispositivo', 'error');
+            return;
+        }
+
+        const carga = this.currentCarga;
+        if (!carga) return;
+
+        this.showToast('🛰️ Iniciando GPS...', 'info');
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+
+                // Guardar punto inicial
+                this.guardarPuntoGPS(carga.id, lat, lng, accuracy, 'inicio');
+
+                // Actualizar UI
+                document.getElementById('gpsCoords').textContent = 
+                    'Lat: ' + lat.toFixed(6) + ' | Lng: ' + lng.toFixed(6) + ' (±' + Math.round(accuracy) + 'm)';
+                document.getElementById('gpsMap').classList.remove('hidden');
+                document.getElementById('gpsIframe').src = 
+                    'https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d2000!2d' + lng + '!3d' + lat + '!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1ses!2scl!4v1';
+
+                // Iniciar seguimiento continuo
+                this.gpsWatchId = navigator.geolocation.watchPosition(
+                    (pos) => this.onGPSUpdate(pos, carga.id),
+                    (err) => console.error('GPS error:', err),
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+
+                document.getElementById('btnGPS').textContent = '🛰️ GPS Activo - Rastreando...';
+                document.getElementById('btnGPS').disabled = true;
+                this.showToast('✅ GPS activado. Ubicacion compartida.', 'success');
+            },
+            (error) => {
+                let msg = 'Error al obtener ubicacion';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED: msg = 'Permiso de ubicacion denegado. Activa GPS en configuracion.'; break;
+                    case error.POSITION_UNAVAILABLE: msg = 'Informacion de ubicacion no disponible.'; break;
+                    case error.TIMEOUT: msg = 'Tiempo de espera agotado para obtener ubicacion.'; break;
+                }
+                this.showToast(msg, 'error');
+                document.getElementById('gpsDot').classList.add('off');
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    },
+
+    onGPSUpdate(position, cargaId) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+
+        this.guardarPuntoGPS(cargaId, lat, lng, accuracy, 'ruta');
+
+        // Actualizar coordenadas en pantalla
+        const coordsEl = document.getElementById('gpsCoordsTransito');
+        if (coordsEl) {
+            coordsEl.textContent = 'Lat: ' + lat.toFixed(6) + ' | Lng: ' + lng.toFixed(6) + ' (±' + Math.round(accuracy) + 'm)';
+        }
+
+        // Actualizar mapa en transito
+        const iframe = document.getElementById('gpsIframeTransito');
+        if (iframe) {
+            iframe.src = 'https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d2000!2d' + lng + '!3d' + lat + '!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1ses!2scl!4v1';
+        }
+    },
+
+    guardarPuntoGPS(cargaId, lat, lng, accuracy, tipo) {
+        const gpsData = JSON.parse(localStorage.getItem('biotrack_gps') || '{}');
+        if (!gpsData[cargaId]) gpsData[cargaId] = [];
+        gpsData[cargaId].push({
+            lat: lat, lng: lng, accuracy: accuracy,
+            timestamp: new Date().toISOString(), tipo: tipo
+        });
+        localStorage.setItem('biotrack_gps', JSON.stringify(gpsData));
+        this.gpsRuta = gpsData[cargaId];
+    },
+
+    getGPSRuta(cargaId) {
+        const gpsData = JSON.parse(localStorage.getItem('biotrack_gps') || '{}');
+        return gpsData[cargaId] || [];
+    },
+
+    detenerGPS() {
+        if (this.gpsWatchId !== null) {
+            navigator.geolocation.clearWatch(this.gpsWatchId);
+            this.gpsWatchId = null;
+        }
+    },
+
+    // ==================== SCANNER ====================
+    startScanner() {
+        const container = document.getElementById('scannerContainer');
+        if (!container) return;
+        if (this.scanner) { this.scanner.clear(); }
+        this.scanner = new Html5Qrcode('reader');
+        const config = { fps: 10, qrbox: { width: 200, height: 200 }, aspectRatio: 1.0 };
+        Html5Qrcode.getCameras().then(cameras => {
+            if (cameras && cameras.length > 0) {
+                const cameraId = cameras[cameras.length - 1].id;
+                this.scanner.start(cameraId, config,
+                    (decodedText) => { this.onScanSuccess(decodedText); },
+                    (error) => {}
+                ).catch(err => {
+                    this.showToast('Error al iniciar camara. Intenta con ingreso manual.', 'error');
+                });
+            } else {
+                this.showToast('No se encontraron camaras', 'error');
+            }
+        }).catch(err => {
+            this.showToast('No se pudo acceder a la camara', 'error');
+        });
+    },
+
+    stopScanner() {
+        if (this.scanner) {
+            this.scanner.stop().catch(() => {});
+            this.scanner.clear();
+            this.scanner = null;
+        }
+    },
+
+    onScanSuccess(decodedText) {
+        let cargaId = null;
+        try {
+            const url = new URL(decodedText);
+            cargaId = url.searchParams.get('carga');
+        } catch (e) {
+            cargaId = decodedText.trim();
+        }
+        if (cargaId) {
+            this.stopScanner();
+            this.handleCarga(cargaId.toUpperCase());
+        }
+    },
+
+    hideAllScreens() {
+        const screens = ['screenHome','screenManualEntry','screenRemitente','screenTransporte','screenTransito','screenDestinatario','screenMetrics','screenAllCargas'];
+        screens.forEach(id => { document.getElementById(id)?.classList.add('hidden'); });
+    },
+
+    showScreen(screenId) {
+        this.hideAllScreens();
+        document.getElementById(screenId)?.classList.remove('hidden');
+        window.scrollTo(0, 0);
+    },
+
+    goHome() {
+        this.stopScanner();
+        this.hideAllScreens();
+        document.getElementById('screenHome').classList.remove('hidden');
+        this.renderRecentCargas();
+        this.startScanner();
+        this.updateNav('Inicio');
+    },
+
+    showManualEntry() {
+        this.showScreen('screenManualEntry');
+        document.getElementById('manualIdInput').focus();
+    },
+
+    showAllCargas() {
+        this.stopScanner();
+        this.renderAllCargas();
+        this.showScreen('screenAllCargas');
+        this.updateNav('Cargas');
+    },
+
+    updateNav(active) {
+        document.querySelectorAll('.nav-item').forEach(el => {
+            el.classList.remove('active');
+            if (el.textContent.trim().includes(active)) el.classList.add('active');
+        });
+    },
+
+    buscarPorId() {
+        const id = document.getElementById('manualIdInput').value.trim().toUpperCase();
+        if (!id) { this.showToast('Ingresa un ID valido', 'error'); return; }
+        this.handleCarga(id);
+    },
+
+    handleCarga(id) {
+        let carga = this.getCarga(id);
+        if (!carga) {
+            carga = this.createCarga(id);
+            this.showToast('Carga ' + id + ' registrada en el sistema', 'info');
+        }
+        this.currentCarga = carga;
+        switch (carga.estado) {
+            case 'disponible': this.showRemitente(carga); break;
+            case 'enviado': this.showTransporte(carga); break;
+            case 'en_transito': this.showTransito(carga); break;
+            case 'entregado': this.showDestinatario(carga); break;
+            default: this.showRemitente(carga);
+        }
+    },
+
+    showRemitente(carga) {
+        this.showScreen('screenRemitente');
+        document.getElementById('remIdCarga').textContent = 'ID: ' + carga.id;
+        if (carga.tipoCarga) document.getElementById('remTipoCarga').value = carga.tipoCarga;
+        if (carga.descripcion) document.getElementById('remDescripcion').value = carga.descripcion;
+        if (carga.temperatura) document.getElementById('remTemperatura').value = carga.temperatura;
+        if (carga.condiciones) document.getElementById('remCondiciones').value = carga.condiciones;
+        if (carga.remitente?.nombre) document.getElementById('remNombreRemitente').value = carga.remitente.nombre;
+        if (carga.remitente?.institucion) document.getElementById('remInstitucion').value = carga.remitente.institucion;
+        if (carga.remitente?.telefono) document.getElementById('remTelefonoRemitente').value = carga.remitente.telefono;
+        if (carga.transporte?.empresa) document.getElementById('remTransporte').value = carga.transporte.empresa;
+        if (carga.transporte?.conductor) document.getElementById('remConductor').value = carga.transporte.conductor;
+        if (carga.transporte?.patente) document.getElementById('remPatente').value = carga.transporte.patente;
+        if (carga.destinatario?.nombre) document.getElementById('remNombreDestino').value = carga.destinatario.nombre;
+        if (carga.destinatario?.institucion) document.getElementById('remInstitucionDestino').value = carga.destinatario.institucion;
+        if (carga.destinatario?.direccion) document.getElementById('remDireccionDestino').value = carga.destinatario.direccion;
+        if (carga.destinatario?.telefono) document.getElementById('remTelefonoDestino').value = carga.destinatario.telefono;
+    },
+
+    activarEnvio() {
+        const carga = this.currentCarga;
+        if (!carga) return;
+        const required = [
+            ['remTipoCarga','Tipo de carga'],
+            ['remDescripcion','Descripcion'],
+            ['remNombreRemitente','Nombre del remitente'],
+            ['remInstitucion','Institucion'],
+            ['remTransporte','Empresa de transporte'],
+            ['remNombreDestino','Nombre del destinatario'],
+            ['remInstitucionDestino','Institucion destino']
+        ];
+        for (const [id, label] of required) {
+            if (!document.getElementById(id).value.trim()) {
+                this.showToast('Completa: ' + label, 'error');
+                document.getElementById(id).focus();
+                return;
+            }
+        }
+        carga.tipoCarga = document.getElementById('remTipoCarga').value;
+        carga.descripcion = document.getElementById('remDescripcion').value;
+        carga.temperatura = document.getElementById('remTemperatura').value;
+        carga.condiciones = document.getElementById('remCondiciones').value;
+        carga.remitente = {
+            nombre: document.getElementById('remNombreRemitente').value,
+            institucion: document.getElementById('remInstitucion').value,
+            telefono: document.getElementById('remTelefonoRemitente').value
+        };
+        carga.transporte = {
+            empresa: document.getElementById('remTransporte').value,
+            conductor: document.getElementById('remConductor').value,
+            patente: document.getElementById('remPatente').value
+        };
+        carga.destinatario = {
+            nombre: document.getElementById('remNombreDestino').value,
+            institucion: document.getElementById('remInstitucionDestino').value,
+            direccion: document.getElementById('remDireccionDestino').value,
+            telefono: document.getElementById('remTelefonoDestino').value
+        };
+        carga.estado = 'enviado';
+        carga.fechaEnvio = new Date().toISOString();
+        carga.historial.push({
+            fecha: new Date().toISOString(),
+            accion: 'Envio activado por remitente',
+            actor: carga.remitente.nombre,
+            detalle: 'Carga lista para recoleccion por ' + carga.transporte.empresa
+        });
+        this.saveCarga(carga.id, carga);
+        this.enviarAlerta('transporte', carga);
+        this.showToast('🚀 ¡Envio activado! Alerta enviada al transporte', 'success');
+        this.showTransporte(carga);
+    },
+
+    showTransporte(carga) {
+        this.showScreen('screenTransporte');
+        document.getElementById('transIdCarga').textContent = 'ID: ' + carga.id;
+        const tipoLabels = { sangre:'Sangre / Derivados', tejidos:'Tejidos / Organos', vacunas:'Vacunas / Biologicos', muestras:'Muestras de Laboratorio', celulas:'Celulas / Cultivos', otros:'Otros' };
+        document.getElementById('transDetalle').value = '[' + (tipoLabels[carga.tipoCarga] || carga.tipoCarga) + ']\n\n' + (carga.descripcion || '');
+        document.getElementById('transRemitente').value = (carga.remitente?.nombre || '') + ' - ' + (carga.remitente?.institucion || '');
+        document.getElementById('transDestino').value = (carga.destinatario?.nombre || '') + ' - ' + (carga.destinatario?.institucion || '');
+        document.getElementById('transDireccion').value = carga.destinatario?.direccion || '';
+        document.getElementById('transTemperatura').value = carga.temperatura || 'No especificada';
+        if (carga.transporte?.conductor) document.getElementById('transConductorConfirma').value = carga.transporte.conductor;
+        if (carga.transporte?.patente) document.getElementById('transPatenteConfirma').value = carga.transporte.patente;
+    },
+
+    confirmarRecoleccion() {
+        const carga = this.currentCarga;
+        if (!carga) return;
+        const conductor = document.getElementById('transConductorConfirma').value.trim();
+        const patente = document.getElementById('transPatenteConfirma').value.trim();
+        if (!conductor || !patente) {
+            this.showToast('Completa todos los campos obligatorios', 'error');
+            return;
+        }
+        carga.transporte.conductor = conductor;
+        carga.transporte.patente = patente;
+        carga.transporte.observacionesRecoleccion = document.getElementById('transObservaciones').value;
+        carga.estado = 'en_transito';
+        carga.fechaRecoleccion = new Date().toISOString();
+        carga.historial.push({
+            fecha: new Date().toISOString(),
+            accion: 'Recoleccion confirmada por transporte',
+            actor: conductor,
+            detalle: 'Vehiculo ' + patente + ' - ' + carga.transporte.empresa
+        });
+        this.saveCarga(carga.id, carga);
+        this.enviarAlerta('todos', carga, 'Carga ' + carga.id + ' en transito hacia ' + carga.destinatario.institucion);
+        this.showToast('✅ Recoleccion confirmada. Carga en transito.', 'success');
+        this.showTransito(carga);
+    },
+
+    showTransito(carga) {
+        this.showScreen('screenTransito');
+        document.getElementById('transitoIdCarga').textContent = 'ID: ' + carga.id;
+        const tipoLabels = { sangre:'Sangre / Derivados', tejidos:'Tejidos / Organos', vacunas:'Vacunas / Biologicos', muestras:'Muestras de Laboratorio', celulas:'Celulas / Cultivos', otros:'Otros' };
+        document.getElementById('transitoTipo').value = tipoLabels[carga.tipoCarga] || carga.tipoCarga;
+        document.getElementById('transitoDescripcion').value = carga.descripcion || '';
+        document.getElementById('transitoTransporte').value = carga.transporte?.empresa || '';
+        document.getElementById('transitoConductor').value = carga.transporte?.conductor || '';
+        document.getElementById('transitoPatente').value = carga.transporte?.patente || '';
+        this.renderTimeline('transitoTimeline', carga.historial);
+
+        // Mostrar ruta GPS si existe
+        const ruta = this.getGPSRuta(carga.id);
+        if (ruta.length > 0) {
+            const ultimo = ruta[ruta.length - 1];
+            document.getElementById('gpsCoordsTransito').textContent = 
+                'Lat: ' + ultimo.lat.toFixed(6) + ' | Lng: ' + ultimo.lng.toFixed(6);
+            document.getElementById('gpsIframeTransito').src = 
+                'https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d2000!2d' + ultimo.lng + '!3d' + ultimo.lat + '!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1ses!2scl!4v1';
+        }
+    },
+
+    confirmarRecepcion() {
+        const carga = this.currentCarga;
+        if (!carga) return;
+        if (confirm('¿Confirmas que has recibido la carga en buenas condiciones?')) {
+            // Detener GPS
+            this.detenerGPS();
+
+            // Guardar punto final
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    this.guardarPuntoGPS(carga.id, pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, 'entrega');
+                });
+            }
+
+            carga.estado = 'entregado';
+            carga.fechaEntrega = new Date().toISOString();
+            carga.recibidoPor = prompt('Ingresa tu nombre (quien recibe):') || 'Destinatario';
+            carga.historial.push({
+                fecha: new Date().toISOString(),
+                accion: 'Carga entregada y recepcion confirmada',
+                actor: carga.recibidoPor,
+                detalle: 'Entrega en ' + (carga.destinatario?.institucion || '')
+            });
+            this.saveCarga(carga.id, carga);
+            this.enviarAlerta('todos', carga, 'Carga ' + carga.id + ' entregada exitosamente');
+            this.showToast('✅ Entrega confirmada', 'success');
+            this.showDestinatario(carga);
+        }
+    },
+
+    showDestinatario(carga) {
+        this.showScreen('screenDestinatario');
+        document.getElementById('destIdCarga').textContent = 'ID: ' + carga.id;
+        const tipoLabels = { sangre:'Sangre / Derivados', tejidos:'Tejidos / Organos', vacunas:'Vacunas / Biologicos', muestras:'Muestras de Laboratorio', celulas:'Celulas / Cultivos', otros:'Otros' };
+        document.getElementById('destTipo').value = tipoLabels[carga.tipoCarga] || carga.tipoCarga;
+        document.getElementById('destDescripcion').value = carga.descripcion || '';
+        document.getElementById('destTemperatura').value = carga.temperatura || 'No especificada';
+        document.getElementById('destCondiciones').value = carga.condiciones || 'Ninguna';
+
+        const envio = carga.fechaEnvio ? new Date(carga.fechaEnvio) : null;
+        const recoleccion = carga.fechaRecoleccion ? new Date(carga.fechaRecoleccion) : null;
+        const entrega = carga.fechaEntrega ? new Date(carga.fechaEntrega) : null;
+
+        let tiempoTransito = '--';
+        let tiempoTotal = '--';
+        if (recoleccion && entrega) {
+            const diff = Math.round((entrega - recoleccion) / 60000);
+            tiempoTransito = diff < 60 ? diff + ' min' : Math.round(diff/60*10)/10 + ' h';
+        }
+        if (envio && entrega) {
+            const diff = Math.round((entrega - envio) / 60000);
+            tiempoTotal = diff < 60 ? diff + ' min' : Math.round(diff/60*10)/10 + ' h';
+        }
+
+        document.getElementById('metricTiempoTransito').textContent = tiempoTransito;
+        document.getElementById('metricTiempoTotal').textContent = tiempoTotal;
+        document.getElementById('destFechaEnvio').value = envio ? envio.toLocaleString('es-CL') : '--';
+        document.getElementById('destFechaEntrega').value = entrega ? entrega.toLocaleString('es-CL') : '--';
+        document.getElementById('destTransporte').value = carga.transporte?.empresa || '';
+        document.getElementById('destConductor').value = carga.transporte?.conductor || '';
+        document.getElementById('destPatente').value = carga.transporte?.patente || '';
+        document.getElementById('destRemitente').value = carga.remitente?.nombre || '';
+        document.getElementById('destInstitucionRem').value = carga.remitente?.institucion || '';
+        document.getElementById('destTelefonoRem').value = carga.remitente?.telefono || '';
+        document.getElementById('destRecibidoPor').value = carga.recibidoPor || '';
+        document.getElementById('destInstitucion').value = carga.destinatario?.institucion || '';
+        document.getElementById('destDireccion').value = carga.destinatario?.direccion || '';
+
+        this.renderTimeline('destTimeline', carga.historial);
+
+        // Mostrar ruta GPS
+        const ruta = this.getGPSRuta(carga.id);
+        document.getElementById('gpsPuntosCount').textContent = ruta.length;
+        if (ruta.length > 0) {
+            const ultimo = ruta[ruta.length - 1];
+            document.getElementById('gpsIframeFinal').src = 
+                'https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d2000!2d' + ultimo.lng + '!3d' + ultimo.lat + '!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1ses!2scl!4v1';
+        }
+    },
+
+    renderTimeline(containerId, historial) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        historial.slice().reverse().forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'timeline-item ' + (index === 0 ? 'active' : 'completed');
+            const fecha = new Date(item.fecha);
+            div.innerHTML = '<div class="timeline-time">' + fecha.toLocaleString('es-CL') + '</div>' +
+                '<div class="timeline-title">' + item.accion + '</div>' +
+                '<div class="timeline-desc">' + (item.actor ? 'Por: ' + item.actor : '') + 
+                (item.detalle ? '<br>' + item.detalle : '') + '</div>';
+            container.appendChild(div);
+        });
+    },
+
+    enviarAlerta(tipo, carga, mensaje) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Safer Chile - ' + carga.id, {
+                body: mensaje || 'Nueva alerta de carga biologica',
+                icon: 'S'
+            });
+        }
+    },
+
+    showToast(message, type) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-' + type;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => { toast.remove(); }, 4000);
+    },
+
+    renderRecentCargas() {
+        const cargas = this.getCargas();
+        const lista = Object.values(cargas).sort((a,b) => new Date(b.creado) - new Date(a.creado)).slice(0, 5);
+        const container = document.getElementById('recentCargasList');
+        if (!container) return;
+        if (lista.length === 0) {
+            container.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;">No hay cargas registradas aun. Escanea un QR para comenzar.</p>';
+            return;
+        }
+        container.innerHTML = lista.map(c => this.renderCargaItem(c)).join('');
+    },
+
+    renderAllCargas() {
+        const cargas = this.getCargas();
+        const lista = Object.values(cargas).sort((a,b) => new Date(b.creado) - new Date(a.creado));
+        const container = document.getElementById('fullCargasList');
+        const container2 = document.getElementById('allCargasList');
+        const html = lista.length === 0 ? 
+            '<p style="text-align:center;color:var(--text-light);padding:20px;">No hay cargas registradas.</p>' :
+            lista.map(c => this.renderCargaItem(c)).join('');
+        if (container) container.innerHTML = html;
+        if (container2) container2.innerHTML = html;
+    },
+
+    renderCargaItem(carga) {
+        const statusLabels = { disponible: 'Disponible', enviado: 'Enviado', en_transito: 'En Transito', entregado: 'Entregado' };
+        const statusClasses = { disponible: 'status-disponible', enviado: 'status-enviado', en_transito: 'status-transito', entregado: 'status-entregado' };
+        const icons = { disponible: '📦', enviado: '🚨', en_transito: '🚛', entregado: '✅' };
+        return '<div class="carga-item" onclick="app.handleCarga('' + carga.id + '')">' +
+            '<div class="carga-icon">' + icons[carga.estado] + '</div>' +
+            '<div class="carga-info">' +
+            '<div class="carga-id">' + carga.id + '</div>' +
+            '<div class="carga-meta">' + (carga.tipoCarga || 'Sin tipo') + ' • ' + 
+            new Date(carga.creado).toLocaleDateString('es-CL') + '</div></div>' +
+            '<span class="status-badge ' + statusClasses[carga.estado] + '">' + statusLabels[carga.estado] + '</span></div>';
+    },
+
+    showMetrics() {
+        this.stopScanner();
+        this.showScreen('screenMetrics');
+        this.updateNav('Metricas');
+        this.renderMetrics();
+        this.renderAllCargas();
+    },
+
+    renderMetrics() {
+        const cargas = Object.values(this.getCargas());
+        const total = cargas.length;
+        const entregadas = cargas.filter(c => c.estado === 'entregado').length;
+        const transito = cargas.filter(c => c.estado === 'en_transito').length;
+        const enviadas = cargas.filter(c => c.estado === 'enviado').length;
+        const disponibles = cargas.filter(c => c.estado === 'disponible').length;
+
+        document.getElementById('dashTotal').textContent = total;
+        document.getElementById('dashEntregadas').textContent = entregadas;
+        document.getElementById('dashTransito').textContent = transito;
+
+        let promedio = 0; let count = 0;
+        cargas.forEach(c => {
+            if (c.fechaEnvio && c.fechaEntrega) {
+                promedio += (new Date(c.fechaEntrega) - new Date(c.fechaEnvio));
+                count++;
+            }
+        });
+        const promHoras = count > 0 ? Math.round((promedio/count)/3600000*10)/10 : 0;
+        document.getElementById('dashPromedio').textContent = promHoras + 'h';
+
+        const ctxStatus = document.getElementById('chartStatus');
+        if (ctxStatus) {
+            if (this.charts.status) this.charts.status.destroy();
+            this.charts.status = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Disponible','Enviado','En Transito','Entregado'],
+                    datasets: [{ data: [disponibles, enviadas, transito, entregadas],
+                        backgroundColor: ['#27ae60','#f39c12','#2980b9','#7b1fa2'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'Distribucion por Estado' } } }
+            });
+        }
+
+        const tiemposPorTipo = {};
+        cargas.forEach(c => {
+            if (c.fechaEnvio && c.fechaEntrega && c.tipoCarga) {
+                if (!tiemposPorTipo[c.tipoCarga]) tiemposPorTipo[c.tipoCarga] = { sum: 0, count: 0 };
+                tiemposPorTipo[c.tipoCarga].sum += (new Date(c.fechaEntrega) - new Date(c.fechaEnvio));
+                tiemposPorTipo[c.tipoCarga].count++;
+            }
+        });
+        const tipoLabels = { sangre:'Sangre', tejidos:'Tejidos', vacunas:'Vacunas', muestras:'Muestras', celulas:'Celulas', otros:'Otros' };
+        const labels = Object.keys(tiemposPorTipo).map(k => tipoLabels[k] || k);
+        const data = Object.values(tiemposPorTipo).map(v => Math.round(v.sum/v.count/3600000*10)/10);
+
+        const ctxTiempo = document.getElementById('chartTiempo');
+        if (ctxTiempo) {
+            if (this.charts.tiempo) this.charts.tiempo.destroy();
+            this.charts.tiempo = new Chart(ctxTiempo, {
+                type: 'bar',
+                data: { labels: labels, datasets: [{ label: 'Horas promedio', data: data, backgroundColor: '#1a6b7a', borderRadius: 8 }] },
+                options: { responsive: true, maintainAspectRatio: false,
+                    plugins: { title: { display: true, text: 'Tiempo Promedio por Tipo de Carga' } },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Horas' } } } }
+            });
+        }
+    },
+
+    exportData() {
+        const cargas = this.getCargas();
+        const data = Object.values(cargas);
+        if (data.length === 0) { this.showToast('No hay datos para exportar', 'error'); return; }
+        let csv = 'ID,Estado,Tipo,Descripcion,Temperatura,Remitente,Institucion Remitente,Transporte,Conductor,Patente,Destinatario,Institucion Destino,Direccion,Fecha Envio,Fecha Recoleccion,Fecha Entrega,Tiempo Total (min),Recibido Por,Puntos GPS\n';
+        data.forEach(c => {
+            const totalMin = (c.fechaEnvio && c.fechaEntrega) ? Math.round((new Date(c.fechaEntrega)-new Date(c.fechaEnvio))/60000) : '';
+            const gpsCount = this.getGPSRuta(c.id).length;
+            csv += [
+                c.id, c.estado, c.tipoCarga || '', (c.descripcion || '').replace(/,/g,';'),
+                c.temperatura || '', c.remitente?.nombre || '', c.remitente?.institucion || '',
+                c.transporte?.empresa || '', c.transporte?.conductor || '', c.transporte?.patente || '',
+                c.destinatario?.nombre || '', c.destinatario?.institucion || '', c.destinatario?.direccion || '',
+                c.fechaEnvio || '', c.fechaRecoleccion || '', c.fechaEntrega || '', totalMin, c.recibidoPor || '', gpsCount
+            ].join(',') + '\n';
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'safer_chile_export_' + new Date().toISOString().slice(0,10) + '.csv';
+        link.click();
+        this.showToast('📊 Datos exportados a CSV', 'success');
+    }
+};
+
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+
+document.addEventListener('DOMContentLoaded', () => { app.init(); });
+</script>
+</body>
+</html>

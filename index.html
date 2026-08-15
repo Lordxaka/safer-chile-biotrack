@@ -1,0 +1,2406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a6b7a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Safer Chile SPA | BioTrack Pro</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --safer-teal: #1a6b7a;
+            --safer-teal-light: #2a8fa3;
+            --safer-teal-dark: #0d4a55;
+            --safer-accent: #e8b931;
+            --safer-accent-dark: #c99a1e;
+            --danger: #c0392b;
+            --warning: #f39c12;
+            --info: #2980b9;
+            --success: #27ae60;
+            --bg: #f0f4f5;
+            --card: #ffffff;
+            --text: #1a1a1a;
+            --text-light: #666;
+            --border: #e0e0e0;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+            --sidebar-width: 260px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            overflow-x: hidden;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes gpsPulse { 0% { box-shadow: 0 0 0 0 rgba(26,107,122,0.4); } 50% { box-shadow: 0 0 0 12px rgba(26,107,122,0); } 100% { box-shadow: 0 0 0 0 rgba(26,107,122,0); } }
+        @keyframes scanLine { 0% { top: 0; } 100% { top: 100%; } }
+        @keyframes alertPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(231,76,60,0.4); } 50% { box-shadow: 0 0 0 15px rgba(231,76,60,0); } }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        .slide-in-left { animation: slideInLeft 0.3s ease-out; }
+        .slide-in-right { animation: slideInRight 0.3s ease-out; }
+
+        /* LOGIN SCREEN */
+        .login-screen {
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, var(--safer-teal-dark) 0%, var(--safer-teal) 50%, var(--safer-teal-light) 100%);
+            padding: 20px;
+        }
+        .login-box {
+            background: white; border-radius: 24px; padding: 40px; width: 100%; max-width: 420px;
+            box-shadow: var(--shadow-lg); animation: fadeIn 0.5s ease-out;
+        }
+        .login-logo {
+            text-align: center; margin-bottom: 30px;
+        }
+        .login-logo .logo-icon {
+            width: 70px; height: 70px; background: linear-gradient(135deg, var(--safer-teal), var(--safer-teal-light));
+            border-radius: 18px; display: inline-flex; align-items: center; justify-content: center;
+            color: white; font-size: 1.8rem; font-weight: 800; margin-bottom: 16px;
+        }
+        .login-logo h1 { color: var(--safer-teal); font-size: 1.5rem; font-weight: 700; }
+        .login-logo p { color: var(--text-light); font-size: 0.9rem; margin-top: 4px; }
+        .role-selector {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px;
+        }
+        .role-btn {
+            padding: 14px; border: 2px solid var(--border); border-radius: 12px;
+            background: white; cursor: pointer; text-align: center; transition: all 0.2s;
+            font-family: inherit; font-size: 0.85rem; font-weight: 600; color: var(--text-light);
+        }
+        .role-btn:hover { border-color: var(--safer-teal-light); color: var(--safer-teal); }
+        .role-btn.active { border-color: var(--safer-teal); background: var(--safer-teal); color: white; }
+        .role-btn .role-icon { font-size: 1.5rem; display: block; margin-bottom: 6px; }
+
+        /* APP LAYOUT */
+        .app-layout { display: none; min-height: 100vh; }
+        .app-layout.active { display: flex; }
+        
+        /* SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width); background: linear-gradient(180deg, var(--safer-teal-dark) 0%, var(--safer-teal) 100%);
+            color: white; position: fixed; left: 0; top: 0; bottom: 0; z-index: 200;
+            display: flex; flex-direction: column; padding: 20px 0;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+        }
+        .sidebar-brand {
+            padding: 0 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.15);
+            display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+        }
+        .sidebar-brand .brand-icon {
+            width: 42px; height: 42px; background: white; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; color: var(--safer-teal); font-size: 1.1rem;
+        }
+        .sidebar-brand h2 { font-size: 1.1rem; font-weight: 700; }
+        .sidebar-brand p { font-size: 0.7rem; opacity: 0.8; }
+        .sidebar-user {
+            padding: 0 24px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 12px;
+        }
+        .sidebar-user .user-name { font-weight: 600; font-size: 0.95rem; }
+        .sidebar-user .user-role { font-size: 0.75rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 0 12px; }
+        .nav-section { margin-bottom: 16px; }
+        .nav-section-title {
+            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px;
+            opacity: 0.5; padding: 0 12px; margin-bottom: 6px;
+        }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+            border-radius: 10px; cursor: pointer; transition: all 0.2s;
+            color: rgba(255,255,255,0.8); font-size: 0.9rem; font-weight: 500;
+            border: none; background: none; width: 100%; text-align: left; font-family: inherit;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active { background: var(--safer-accent); color: #1a1a1a; font-weight: 600; }
+        .nav-item .nav-icon { font-size: 1.2rem; width: 24px; text-align: center; }
+        .nav-item .nav-badge {
+            margin-left: auto; background: var(--danger); color: white;
+            font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 700;
+        }
+        .sidebar-footer {
+            padding: 16px 24px 0; border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-footer button {
+            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3);
+            background: transparent; color: white; font-family: inherit; cursor: pointer;
+            font-size: 0.85rem; transition: all 0.2s;
+        }
+        .sidebar-footer button:hover { background: rgba(255,255,255,0.15); }
+
+        /* MAIN CONTENT */
+        .main-content {
+            margin-left: var(--sidebar-width); flex: 1; min-height: 100vh;
+            padding: 24px 28px; background: var(--bg);
+        }
+        .page-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px;
+        }
+        .page-header h1 { font-size: 1.5rem; color: var(--safer-teal-dark); font-weight: 700; }
+        .page-header .breadcrumb { font-size: 0.8rem; color: var(--text-light); margin-top: 4px; }
+
+        /* CARDS */
+        .card {
+            background: var(--card); border-radius: 16px; padding: 24px;
+            box-shadow: var(--shadow); margin-bottom: 20px;
+        }
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px;
+        }
+        .card-title { font-size: 1.1rem; font-weight: 700; color: var(--safer-teal-dark); }
+        .card-subtitle { font-size: 0.85rem; color: var(--text-light); margin-top: 4px; }
+
+        /* BUTTONS */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px 24px; border: none; border-radius: 12px; font-size: 0.95rem;
+            font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none;
+            font-family: inherit;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--safer-teal); color: white; }
+        .btn-primary:hover { background: var(--safer-teal-light); }
+        .btn-accent { background: var(--safer-accent); color: #1a1a1a; }
+        .btn-accent:hover { background: var(--safer-accent-dark); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-info { background: var(--info); color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--safer-teal); color: var(--safer-teal); }
+        .btn-outline:hover { background: var(--safer-teal); color: white; }
+        .btn-ghost { background: rgba(26,107,122,0.08); color: var(--safer-teal); }
+        .btn-ghost:hover { background: rgba(26,107,122,0.15); }
+        .btn-sm { padding: 8px 16px; font-size: 0.85rem; }
+        .btn-lg { padding: 16px 32px; font-size: 1.05rem; }
+        .btn-block { width: 100%; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* FORMS */
+        .form-group { margin-bottom: 18px; }
+        .form-label {
+            display: block; font-size: 0.8rem; font-weight: 600;
+            color: var(--text-light); margin-bottom: 6px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .form-input, .form-select, .form-textarea {
+            width: 100%; padding: 12px 16px; border: 2px solid var(--border);
+            border-radius: 12px; font-size: 1rem; font-family: inherit;
+            transition: all 0.2s; background: white;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none; border-color: var(--safer-teal-light);
+            box-shadow: 0 0 0 3px rgba(26,107,122,0.1);
+        }
+        .form-textarea { min-height: 80px; resize: vertical; }
+        .form-input:read-only, .form-textarea:read-only { background: #f8f8f8; color: var(--text-light); }
+
+        /* HUINCHAS / STRIPS */
+        .huincha {
+            background: linear-gradient(135deg, var(--safer-teal) 0%, var(--safer-teal-light) 100%);
+            color: white; padding: 16px 20px; border-radius: 12px; margin-bottom: 12px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .huincha .huincha-icon { font-size: 1.5rem; opacity: 0.9; }
+        .huincha .huincha-content { flex: 1; }
+        .huincha .huincha-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+        .huincha .huincha-value { font-size: 1.1rem; font-weight: 700; }
+        .huincha.editable { cursor: pointer; position: relative; }
+        .huincha.editable::after {
+            content: '✏️'; position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+            opacity: 0.5; font-size: 0.9rem;
+        }
+        .huincha.editable:hover::after { opacity: 1; }
+        .huincha.editable:hover { box-shadow: 0 4px 12px rgba(26,107,122,0.3); }
+
+        /* METRICS */
+        .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .metric-card {
+            background: white; border-radius: 16px; padding: 20px;
+            box-shadow: var(--shadow); text-align: center;
+            border-top: 4px solid var(--safer-teal);
+        }
+        .metric-card .metric-icon { font-size: 1.8rem; margin-bottom: 8px; }
+        .metric-card .metric-value { font-size: 1.6rem; font-weight: 700; color: var(--safer-teal-dark); }
+        .metric-card .metric-label { font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+        .metric-card.accent { border-top-color: var(--safer-accent); }
+        .metric-card.success { border-top-color: var(--success); }
+        .metric-card.danger { border-top-color: var(--danger); }
+
+        /* TABLES */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .data-table th {
+            background: var(--safer-teal); color: white; padding: 12px 16px;
+            text-align: left; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+        .data-table tr:hover { background: #f8f9fa; }
+        .data-table .actions { display: flex; gap: 6px; }
+        .data-table .actions button { padding: 6px 10px; font-size: 0.8rem; }
+
+        /* STATUS BADGES */
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 20px; font-size: 0.75rem;
+            font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .badge-disponible { background: #e8f5e9; color: var(--success); }
+        .badge-reservado { background: #fff3e0; color: var(--warning); }
+        .badge-enviado { background: #e3f2fd; color: var(--info); }
+        .badge-transito { background: #e8eaf6; color: #3f51b5; animation: pulse 2s infinite; }
+        .badge-entregado { background: #f3e5f5; color: #7b1fa2; }
+        .badge-pagado { background: #e8f5e9; color: var(--success); }
+        .badge-pendiente { background: #ffebee; color: var(--danger); }
+
+        /* QR ITEMS */
+        .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+        .qr-card {
+            background: white; border-radius: 16px; padding: 20px; box-shadow: var(--shadow);
+            border: 2px solid transparent; transition: all 0.2s; cursor: pointer;
+        }
+        .qr-card:hover { border-color: var(--safer-teal-light); transform: translateY(-2px); }
+        .qr-card.reserved { border-color: var(--warning); background: #fffbf0; }
+        .qr-card.in-transit { border-color: var(--info); background: #f5f9ff; }
+        .qr-card .qr-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+        .qr-card .qr-id { font-size: 1.1rem; font-weight: 700; color: var(--safer-teal-dark); }
+        .qr-card .qr-meta { font-size: 0.8rem; color: var(--text-light); margin-top: 4px; }
+
+        /* MAP */
+        .map-container {
+            width: 100%; height: 400px; border-radius: 16px; overflow: hidden;
+            background: #e0e0e0; position: relative;
+        }
+        .map-container iframe { width: 100%; height: 100%; border: none; }
+        .map-overlay {
+            position: absolute; top: 16px; left: 16px;
+            background: rgba(26,107,122,0.9); color: white;
+            padding: 10px 16px; border-radius: 10px; font-size: 0.85rem;
+        }
+
+        /* GPS PANEL */
+        .gps-panel {
+            background: linear-gradient(135deg, var(--safer-teal) 0%, var(--safer-teal-light) 100%);
+            color: white; padding: 20px; border-radius: 16px; margin-bottom: 20px;
+        }
+        .gps-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .gps-dot { width: 14px; height: 14px; border-radius: 50%; background: #4ade80; animation: gpsPulse 2s infinite; }
+        .gps-dot.off { background: #ef4444; animation: none; }
+        .gps-coords { font-family: 'SF Mono', monospace; font-size: 0.85rem; background: rgba(0,0,0,0.15); padding: 10px 14px; border-radius: 8px; }
+
+        /* TIMELINE */
+        .timeline { position: relative; padding-left: 30px; }
+        .timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+        .timeline-item { position: relative; padding-bottom: 20px; }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -26px; top: 2px;
+            width: 14px; height: 14px; border-radius: 50%; background: var(--border);
+            border: 3px solid white; box-shadow: 0 0 0 2px var(--border);
+        }
+        .timeline-item.active::before { background: var(--safer-teal); box-shadow: 0 0 0 2px var(--safer-teal); }
+        .timeline-item.completed::before { background: var(--success); box-shadow: 0 0 0 2px var(--success); }
+        .timeline-time { font-size: 0.75rem; color: var(--text-light); }
+        .timeline-title { font-weight: 600; margin-top: 2px; }
+        .timeline-desc { font-size: 0.85rem; color: var(--text-light); margin-top: 2px; }
+
+        /* SCANNER */
+        .scanner-container {
+            position: relative; border-radius: 16px; overflow: hidden;
+            background: #000; aspect-ratio: 1; max-width: 400px; margin: 0 auto;
+        }
+        .scanner-overlay { position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+        .scanner-frame { width: 70%; height: 70%; border: 3px solid var(--safer-accent); border-radius: 20px; position: relative; }
+        .scanner-frame::before, .scanner-frame::after { content: ''; position: absolute; width: 20px; height: 20px; border-color: var(--safer-accent); border-style: solid; }
+        .scanner-frame::before { top: -3px; left: -3px; border-width: 4px 0 0 4px; }
+        .scanner-frame::after { bottom: -3px; right: -3px; border-width: 0 4px 4px 0; }
+        .scan-line { position: absolute; left: 0; right: 0; height: 2px; background: var(--safer-accent); box-shadow: 0 0 10px var(--safer-accent); animation: scanLine 2s linear infinite; }
+
+        /* TOAST */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1001; display: flex; flex-direction: column; gap: 8px; }
+        .toast { padding: 14px 20px; border-radius: 12px; color: white; font-weight: 500; box-shadow: var(--shadow-lg); animation: slideInRight 0.3s ease-out; max-width: 320px; }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-info { background: var(--info); }
+        .toast-warning { background: var(--warning); color: #1a1a1a; }
+
+        /* ALERTS */
+        .alert { padding: 16px 20px; border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
+        .alert-warning { background: #fff8e1; color: #f57f17; border-left: 4px solid var(--warning); }
+        .alert-info { background: #e3f2fd; color: #1565c0; border-left: 4px solid var(--info); }
+        .alert-success { background: #e8f5e9; color: #2e7d32; border-left: 4px solid var(--success); }
+        .alert-danger { background: #ffebee; color: #c62828; border-left: 4px solid var(--danger); animation: alertPulse 2s infinite; }
+
+        /* TABS */
+        .tabs { display: flex; gap: 4px; background: #e8e8e8; padding: 4px; border-radius: 12px; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; border-radius: 10px; border: none; background: transparent; cursor: pointer; font-family: inherit; font-weight: 600; font-size: 0.9rem; color: var(--text-light); transition: all 0.2s; }
+        .tab:hover { color: var(--safer-teal); }
+        .tab.active { background: white; color: var(--safer-teal); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 20px; padding: 32px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; animation: fadeIn 0.3s ease-out; }
+        .modal-header { margin-bottom: 20px; }
+        .modal-header h3 { font-size: 1.2rem; color: var(--safer-teal-dark); }
+        .modal-footer { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
+
+        /* PAYMENT CARDS */
+        .plan-card {
+            background: white; border-radius: 16px; padding: 24px; box-shadow: var(--shadow);
+            border: 2px solid var(--border); transition: all 0.2s; text-align: center;
+        }
+        .plan-card:hover { border-color: var(--safer-teal-light); transform: translateY(-4px); }
+        .plan-card.featured { border-color: var(--safer-accent); position: relative; }
+        .plan-card.featured::before {
+            content: 'RECOMENDADO'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+            background: var(--safer-accent); color: #1a1a1a; padding: 4px 16px; border-radius: 20px;
+            font-size: 0.7rem; font-weight: 700;
+        }
+        .plan-card .plan-name { font-size: 1.2rem; font-weight: 700; color: var(--safer-teal-dark); }
+        .plan-card .plan-price { font-size: 2rem; font-weight: 800; color: var(--safer-teal); margin: 12px 0; }
+        .plan-card .plan-price span { font-size: 0.9rem; color: var(--text-light); font-weight: 400; }
+        .plan-card .plan-features { text-align: left; margin: 20px 0; }
+        .plan-card .plan-features li { list-style: none; padding: 6px 0; font-size: 0.9rem; color: var(--text-light); }
+        .plan-card .plan-features li::before { content: '✓ '; color: var(--success); font-weight: 700; }
+
+        /* SUB-ADMIN CARDS */
+        .subadmin-card {
+            background: white; border-radius: 16px; padding: 20px; box-shadow: var(--shadow);
+            display: flex; align-items: center; gap: 16px; margin-bottom: 12px;
+        }
+        .subadmin-avatar { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--safer-teal), var(--safer-teal-light)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; flex-shrink: 0; }
+        .subadmin-info { flex: 1; }
+        .subadmin-name { font-weight: 600; color: var(--safer-teal-dark); }
+        .subadmin-meta { font-size: 0.8rem; color: var(--text-light); margin-top: 2px; }
+        .subadmin-actions { display: flex; gap: 8px; }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 640px) {
+            .metrics-grid { grid-template-columns: 1fr; }
+            .qr-grid { grid-template-columns: 1fr; }
+            .login-box { padding: 24px; }
+            .main-content { padding: 16px; }
+        }
+
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+        .mt-2 { margin-top: 8px; }
+        .mt-3 { margin-top: 12px; }
+        .mt-4 { margin-top: 16px; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-3 { margin-bottom: 12px; }
+        .flex { display: flex; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .gap-2 { gap: 8px; }
+        .gap-3 { gap: 12px; }
+        .w-full { width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <!-- MODAL OVERLAY -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modalContent"></div>
+    </div>
+
+    <!-- ==================== LOGIN SCREEN ==================== -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-box">
+            <div class="login-logo">
+                <div class="logo-icon">S</div>
+                <h1>SAFER CHILE SPA</h1>
+                <p>BioTrack Pro - Control de Cargas Biológicas</p>
+            </div>
+            
+            <div class="role-selector" id="roleSelector">
+                <button class="role-btn active" data-role="admin" onclick="auth.selectRole('admin')">
+                    <span class="role-icon">👑</span>
+                    Administrador
+                </button>
+                <button class="role-btn" data-role="subadmin" onclick="auth.selectRole('subadmin')">
+                    <span class="role-icon">👤</span>
+                    Sub-Administrador
+                </button>
+                <button class="role-btn" data-role="transportista" onclick="auth.selectRole('transportista')">
+                    <span class="role-icon">🚛</span>
+                    Transportista
+                </button>
+                <button class="role-btn" data-role="superadmin" onclick="auth.selectRole('superadmin')">
+                    <span class="role-icon">🔐</span>
+                    Super Admin
+                </button>
+            </div>
+
+            <div id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Correo Electrónico</label>
+                    <input type="email" class="form-input" id="loginEmail" placeholder="tu@email.com">
+                </div>
+                <div class="form-group" id="phoneField" style="display:none;">
+                    <label class="form-label">Número Telefónico</label>
+                    <input type="tel" class="form-input" id="loginPhone" placeholder="+56 9 XXXX XXXX">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Contraseña</label>
+                    <input type="password" class="form-input" id="loginPassword" placeholder="••••••••">
+                </div>
+                <button class="btn btn-primary btn-block btn-lg" onclick="auth.login()">
+                    🔓 Ingresar al Sistema
+                </button>
+            </div>
+            
+            <div class="text-center mt-4" style="font-size:0.8rem;color:var(--text-light);">
+                <p>💡 <strong>Demo:</strong> Usa cualquier email/contraseña para probar</p>
+                <p>Super Admin: super@saferchile.cl / admin</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== APP LAYOUT ==================== -->
+    <div class="app-layout" id="appLayout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">S</div>
+                <div>
+                    <h2>SAFER CHILE</h2>
+                    <p>BioTrack Pro</p>
+                </div>
+            </div>
+            <div class="sidebar-user">
+                <div class="user-name" id="sidebarUserName">Usuario</div>
+                <div class="user-role" id="sidebarUserRole">Rol</div>
+            </div>
+            <nav class="sidebar-nav" id="sidebarNav">
+                <!-- Navigation items injected by JS -->
+            </nav>
+            <div class="sidebar-footer">
+                <button onclick="auth.logout()">🚪 Cerrar Sesión</button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content" id="mainContent">
+            <!-- Content injected by JS -->
+        </main>
+    </div>
+
+<script>
+// ==================== DATABASE / STORAGE ====================
+const DB = {
+    init() {
+        if (!localStorage.getItem('biotrack_v2_users')) {
+            localStorage.setItem('biotrack_v2_users', JSON.stringify({
+                'super@saferchile.cl': {
+                    email: 'super@saferchile.cl', password: 'admin', role: 'superadmin',
+                    name: 'Super Administrador', phone: '+56 9 0000 0000',
+                    created: new Date().toISOString()
+                }
+            }));
+        }
+        if (!localStorage.getItem('biotrack_v2_admins')) {
+            localStorage.setItem('biotrack_v2_admins', JSON.stringify({}));
+        }
+        if (!localStorage.getItem('biotrack_v2_subadmins')) {
+            localStorage.setItem('biotrack_v2_subadmins', JSON.stringify({}));
+        }
+        if (!localStorage.getItem('biotrack_v2_transportistas')) {
+            localStorage.setItem('biotrack_v2_transportistas', JSON.stringify({}));
+        }
+        if (!localStorage.getItem('biotrack_v2_qrcodes')) {
+            localStorage.setItem('biotrack_v2_qrcodes', JSON.stringify({}));
+        }
+        if (!localStorage.getItem('biotrack_v2_cargas')) {
+            localStorage.setItem('biotrack_v2_cargas', JSON.stringify({}));
+        }
+        if (!localStorage.getItem('biotrack_v2_gps')) {
+            localStorage.setItem('biotrack_v2_gps', JSON.stringify({}));
+        }
+        if (!localStorage.getItem('biotrack_v2_payments')) {
+            localStorage.setItem('biotrack_v2_payments', JSON.stringify({}));
+        }
+        if (!localStorage.getItem('biotrack_v2_sessions')) {
+            localStorage.setItem('biotrack_v2_sessions', JSON.stringify({}));
+        }
+        if (!localStorage.getItem('biotrack_v2_notifications')) {
+            localStorage.setItem('biotrack_v2_notifications', JSON.stringify([]));
+        }
+        if (!localStorage.getItem('biotrack_v2_settings')) {
+            localStorage.setItem('biotrack_v2_settings', JSON.stringify({
+                plans: {
+                    starter: { name: 'Starter', price: 29900, qrLimit: 50, users: 3, cargas: 50 },
+                    professional: { name: 'Professional', price: 59900, qrLimit: 500, users: 10, cargas: 500 },
+                    enterprise: { name: 'Enterprise', price: 119900, qrLimit: -1, users: -1, cargas: -1 }
+                },
+                extraQRPrice: 500,
+                qrPackages: [
+                    { name: 'Paquete 50', quantity: 50, price: 15000 },
+                    { name: 'Paquete 100', quantity: 100, price: 25000 },
+                    { name: 'Paquete 500', quantity: 500, price: 100000 },
+                    { name: 'Paquete 1000', quantity: 1000, price: 180000 }
+                ]
+            }));
+        }
+    },
+    get(key) { return JSON.parse(localStorage.getItem('biotrack_v2_' + key) || '{}'); },
+    set(key, data) { localStorage.setItem('biotrack_v2_' + key, JSON.stringify(data)); },
+    getArray(key) { return JSON.parse(localStorage.getItem('biotrack_v2_' + key) || '[]'); },
+    setArray(key, data) { localStorage.setItem('biotrack_v2_' + key, JSON.stringify(data)); },
+};
+
+// ==================== AUTH SYSTEM ====================
+const auth = {
+    currentUser: null,
+    selectedRole: 'admin',
+
+    selectRole(role) {
+        this.selectedRole = role;
+        document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector('.role-btn[data-role="' + role + '"]').classList.add('active');
+        
+        const phoneField = document.getElementById('phoneField');
+        const emailLabel = document.querySelector('#loginForm .form-label');
+        
+        if (role === 'transportista') {
+            phoneField.style.display = 'block';
+            emailLabel.textContent = 'Correo Electrónico (opcional)';
+        } else {
+            phoneField.style.display = 'none';
+            emailLabel.textContent = 'Correo Electrónico';
+        }
+    },
+
+    login() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const phone = document.getElementById('loginPhone').value.trim();
+        
+        if (!email && this.selectedRole !== 'transportista') {
+            app.showToast('Ingresa tu correo electrónico', 'error'); return;
+        }
+        if (this.selectedRole === 'transportista' && !phone) {
+            app.showToast('Ingresa tu número telefónico', 'error'); return;
+        }
+        if (!password) {
+            app.showToast('Ingresa tu contraseña', 'error'); return;
+        }
+
+        const users = DB.get('users');
+        const key = email || phone;
+        
+        if (!users[key]) {
+            users[key] = {
+                email: email || '', phone: phone || '', password: password,
+                role: this.selectedRole,
+                name: this.selectedRole === 'superadmin' ? 'Super Admin' : 
+                      this.selectedRole === 'admin' ? 'Administrador ' + email.split('@')[0] :
+                      this.selectedRole === 'subadmin' ? 'Sub-Admin ' + email.split('@')[0] :
+                      'Transportista ' + phone,
+                created: new Date().toISOString(),
+                plan: this.selectedRole === 'admin' ? 'professional' : null,
+                qrUsed: 0, qrLimit: this.selectedRole === 'admin' ? 500 : 0,
+                institution: '', contact: ''
+            };
+            DB.set('users', users);
+            
+            if (this.selectedRole === 'admin') {
+                const admins = DB.get('admins');
+                admins[key] = { email: email, name: users[key].name, plan: 'professional', 
+                    qrGenerated: 0, qrLimit: 500, subadmins: [], created: new Date().toISOString() };
+                DB.set('admins', admins);
+            }
+            if (this.selectedRole === 'subadmin') {
+                const subadmins = DB.get('subadmins');
+                subadmins[key] = { email: email, name: users[key].name, 
+                    assignedBy: null, qrReserved: [], created: new Date().toISOString() };
+                DB.set('subadmins', subadmins);
+            }
+            if (this.selectedRole === 'transportista') {
+                const transportistas = DB.get('transportistas');
+                transportistas[key] = { phone: phone, name: users[key].name, 
+                    gpsEnabled: false, created: new Date().toISOString() };
+                DB.set('transportistas', transportistas);
+            }
+        }
+
+        const user = users[key];
+        if (user.password !== password) {
+            app.showToast('Contraseña incorrecta', 'error'); return;
+        }
+
+        this.currentUser = user;
+        localStorage.setItem('biotrack_v2_currentUser', JSON.stringify(user));
+        
+        app.showToast('Bienvenido, ' + user.name, 'success');
+        this.showApp();
+    },
+
+    logout() {
+        this.currentUser = null;
+        localStorage.removeItem('biotrack_v2_currentUser');
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('appLayout').classList.remove('active');
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginPhone').value = '';
+    },
+
+    showApp() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appLayout').classList.add('active');
+        
+        document.getElementById('sidebarUserName').textContent = this.currentUser.name;
+        document.getElementById('sidebarUserRole').textContent = this.getRoleLabel(this.currentUser.role);
+        
+        app.renderSidebar();
+        app.navigate('dashboard');
+    },
+
+    getRoleLabel(role) {
+        const labels = { superadmin: 'Super Administrador', admin: 'Administrador', 
+                        subadmin: 'Sub-Administrador', transportista: 'Transportista' };
+        return labels[role] || role;
+    },
+
+    checkSession() {
+        const saved = localStorage.getItem('biotrack_v2_currentUser');
+        if (saved) {
+            this.currentUser = JSON.parse(saved);
+            this.showApp();
+        }
+    }
+};const app = {
+    currentPage: 'dashboard',
+    scanner: null,
+    gpsWatchId: null,
+    modalCallback: null,
+
+    init() {
+        DB.init();
+        if ('Notification' in window) Notification.requestPermission();
+        auth.checkSession();
+    },
+
+    renderSidebar() {
+        const nav = document.getElementById('sidebarNav');
+        const role = auth.currentUser.role;
+        let items = [];
+        
+        if (role === 'superadmin') {
+            items = [
+                { page: 'dashboard', icon: '📊', label: 'Dashboard' },
+                { page: 'admins', icon: '🏢', label: 'Administradores' },
+                { page: 'market', icon: '📈', label: 'Métricas de Mercado' },
+                { page: 'settings', icon: '⚙️', label: 'Configuración' },
+            ];
+        } else if (role === 'admin') {
+            items = [
+                { page: 'dashboard', icon: '📊', label: 'Dashboard' },
+                { page: 'qrCodes', icon: '🎫', label: 'Mis QR' },
+                { page: 'qrGenerator', icon: '➕', label: 'Generar QR' },
+                { page: 'subadmins', icon: '👥', label: 'Sub-Admins' },
+                { page: 'payments', icon: '💳', label: 'Pagos' },
+                { page: 'stats', icon: '📈', label: 'Estadísticas' },
+                { page: 'transit', icon: '🚛', label: 'En Tránsito' },
+                { page: 'history', icon: '📋', label: 'Historial' },
+            ];
+        } else if (role === 'subadmin') {
+            items = [
+                { page: 'dashboard', icon: '🎫', label: 'Códigos QR' },
+                { page: 'transit', icon: '🚛', label: 'Tránsito' },
+                { page: 'reservations', icon: '🔒', label: 'Mis Reservas' },
+                { page: 'stats', icon: '📊', label: 'Estadísticas' },
+            ];
+        } else if (role === 'transportista') {
+            items = [
+                { page: 'dashboard', icon: '🚛', label: 'Mi Panel' },
+                { page: 'scanner', icon: '📷', label: 'Escanear' },
+                { page: 'gps', icon: '📍', label: 'GPS' },
+                { page: 'history', icon: '📋', label: 'Mis Entregas' },
+            ];
+        }
+        
+        nav.innerHTML = items.map(item => `
+            <button class="nav-item ${this.currentPage === item.page ? 'active' : ''}" onclick="app.navigate('${item.page}')">
+                <span class="nav-icon">${item.icon}</span>
+                <span>${item.label}</span>
+            </button>
+        `).join('');
+    },
+
+    navigate(page) {
+        this.currentPage = page;
+        this.renderSidebar();
+        const container = document.getElementById('mainContent');
+        container.innerHTML = '';
+        window.scrollTo(0, 0);
+        
+        const role = auth.currentUser.role;
+        
+        if (role === 'superadmin') {
+            if (page === 'dashboard') this.renderSuperAdminDashboard(container);
+            else if (page === 'admins') this.renderAdminsList(container);
+            else if (page === 'market') this.renderMarketMetrics(container);
+            else if (page === 'settings') this.renderSettings(container);
+        } else if (role === 'admin') {
+            if (page === 'dashboard') this.renderAdminDashboard(container);
+            else if (page === 'qrCodes') this.renderQRCodes(container);
+            else if (page === 'qrGenerator') this.renderQRGenerator(container);
+            else if (page === 'subadmins') this.renderSubAdmins(container);
+            else if (page === 'payments') this.renderPayments(container);
+            else if (page === 'stats') this.renderAdminStats(container);
+            else if (page === 'transit') this.renderTransit(container);
+            else if (page === 'history') this.renderHistory(container);
+        } else if (role === 'subadmin') {
+            if (page === 'dashboard') this.renderSubAdminQRCodes(container);
+            else if (page === 'transit') this.renderSubAdminTransit(container);
+            else if (page === 'reservations') this.renderMyReservations(container);
+            else if (page === 'stats') this.renderSubAdminStats(container);
+        } else if (role === 'transportista') {
+            if (page === 'dashboard') this.renderTransportistaDashboard(container);
+            else if (page === 'scanner') this.renderTransportistaScanner(container);
+            else if (page === 'gps') this.renderTransportistaGPS(container);
+            else if (page === 'history') this.renderTransportistaHistory(container);
+        }
+    },
+
+    // ==================== SUPER ADMIN DASHBOARD ====================    // ==================== SUPER ADMIN DASHBOARD ====================
+    renderSuperAdminDashboard(container) {
+        const admins = Object.values(DB.get('admins'));
+        const qrcodes = Object.values(DB.get('qrcodes'));
+        const cargas = Object.values(DB.get('cargas'));
+        const payments = Object.values(DB.get('payments'));
+        
+        const totalAdmins = admins.length;
+        const totalQR = qrcodes.length;
+        const totalCargas = cargas.length;
+        const totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        
+        container.innerHTML = `
+            <div class="page-header">
+                <div>
+                    <h1>Dashboard Global</h1>
+                    <div class="breadcrumb">Super Admin > Vista General del Sistema</div>
+                </div>
+            </div>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">🏢</div>
+                    <div class="metric-value">${totalAdmins}</div>
+                    <div class="metric-label">Administradores</div>
+                </div>
+                <div class="metric-card accent">
+                    <div class="metric-icon">🎫</div>
+                    <div class="metric-value">${totalQR}</div>
+                    <div class="metric-label">Códigos QR Generados</div>
+                </div>
+                <div class="metric-card success">
+                    <div class="metric-icon">📦</div>
+                    <div class="metric-value">${totalCargas}</div>
+                    <div class="metric-label">Cargas Totales</div>
+                </div>
+                <div class="metric-card danger">
+                    <div class="metric-icon">💰</div>
+                    <div class="metric-value">$${totalRevenue.toLocaleString('es-CL')}</div>
+                    <div class="metric-label">Ingresos Totales</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">📈 Actividad por Administrador</div>
+                        <div class="card-subtitle">Métricas de uso para estudio de mercado</div>
+                    </div>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Administrador</th>
+                            <th>Plan</th>
+                            <th>QR Generados</th>
+                            <th>Cargas Creadas</th>
+                            <th>Sub-Admins</th>
+                            <th>Ingresos</th>
+                            <th>Última Actividad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${admins.length === 0 ? '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:30px;">No hay administradores registrados</td></tr>' : 
+                        admins.map(a => {
+                            const adminQR = qrcodes.filter(q => q.createdBy === a.email).length;
+                            const adminCargas = cargas.filter(c => c.adminEmail === a.email).length;
+                            const adminPayments = payments.filter(p => p.adminEmail === a.email);
+                            const adminRevenue = adminPayments.reduce((s, p) => s + p.amount, 0);
+                            const subadminCount = a.subadmins ? a.subadmins.length : 0;
+                            return `<tr>
+                                <td><strong>${a.name}</strong><br><small>${a.email}</small></td>
+                                <td><span class="status-badge badge-${a.plan === 'enterprise' ? 'entregado' : a.plan === 'professional' ? 'transito' : 'disponible'}">${a.plan || 'starter'}</span></td>
+                                <td>${adminQR}</td>
+                                <td>${adminCargas}</td>
+                                <td>${subadminCount}</td>
+                                <td>$${adminRevenue.toLocaleString('es-CL')}</td>
+                                <td>${a.lastActivity ? new Date(a.lastActivity).toLocaleDateString('es-CL') : 'Nunca'}</td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📊 Distribución de Planes</div>
+                </div>
+                <div style="height: 300px;">
+                    <canvas id="chartPlans"></canvas>
+                </div>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            const planCounts = { starter: 0, professional: 0, enterprise: 0 };
+            admins.forEach(a => { planCounts[a.plan || 'starter']++; });
+            const ctx = document.getElementById('chartPlans');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Starter', 'Professional', 'Enterprise'],
+                        datasets: [{ data: [planCounts.starter, planCounts.professional, planCounts.enterprise],
+                            backgroundColor: ['#27ae60', '#2980b9', '#7b1fa2'], borderWidth: 0 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+            }
+        }, 100);
+    },
+
+    renderAdminsList(container) {
+        const admins = Object.values(DB.get('admins'));
+        container.innerHTML = `
+            <div class="page-header">
+                <div>
+                    <h1>Administradores</h1>
+                    <div class="breadcrumb">Super Admin > Gestión de Administradores</div>
+                </div>
+            </div>
+            <div class="card">
+                <table class="data-table">
+                    <thead><tr><th>Nombre</th><th>Email</th><th>Plan</th><th>QR Usados</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <tbody>
+                        ${admins.map(a => `<tr>
+                            <td>${a.name}</td>
+                            <td>${a.email}</td>
+                            <td><span class="status-badge badge-${a.plan === 'enterprise' ? 'entregado' : a.plan === 'professional' ? 'transito' : 'disponible'}">${a.plan || 'starter'}</span></td>
+                            <td>${a.qrGenerated || 0} / ${a.qrLimit || 50}</td>
+                            <td><span class="status-badge badge-disponible">Activo</span></td>
+                            <td class="actions">
+                                <button class="btn btn-sm btn-info" onclick="app.viewAdminDetails('${a.email}')">👁️ Ver</button>
+                            </td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    },
+
+    renderMarketMetrics(container) {
+        const qrcodes = Object.values(DB.get('qrcodes'));
+        const cargas = Object.values(DB.get('cargas'));
+        const gps = DB.get('gps');
+        
+        const cargasByType = {};
+        cargas.forEach(c => { cargasByType[c.tipoCarga || 'otros'] = (cargasByType[c.tipoCarga || 'otros'] || 0) + 1; });
+        
+        const cargasByWeek = {};
+        cargas.forEach(c => {
+            const week = this.getWeekNumber(new Date(c.creado));
+            cargasByWeek['Sem ' + week] = (cargasByWeek['Sem ' + week] || 0) + 1;
+        });
+        
+        let totalKm = 0;
+        Object.values(gps).forEach(route => {
+            for (let i = 1; i < route.length; i++) {
+                totalKm += this.calculateDistance(route[i-1].lat, route[i-1].lng, route[i].lat, route[i].lng);
+            }
+        });
+        
+        container.innerHTML = `
+            <div class="page-header">
+                <div><h1>Métricas de Mercado</h1><div class="breadcrumb">Super Admin > Estudio de Mercado</div></div>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric-card"><div class="metric-icon">📦</div><div class="metric-value">${cargas.length}</div><div class="metric-label">Total Envíos</div></div>
+                <div class="metric-card accent"><div class="metric-icon">🛣️</div><div class="metric-value">${Math.round(totalKm)}</div><div class="metric-label">Km Recorridos</div></div>
+                <div class="metric-card success"><div class="metric-icon">🎫</div><div class="metric-value">${qrcodes.length}</div><div class="metric-label">QR Generados</div></div>
+                <div class="metric-card danger"><div class="metric-icon">📊</div><div class="metric-value">${Object.keys(cargasByWeek).length}</div><div class="metric-label">Semanas Activas</div></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div class="card"><div class="card-title">📦 Envíos por Tipo de Carga</div><div style="height:250px;"><canvas id="chartTipoCarga"></canvas></div></div>
+                <div class="card"><div class="card-title">📅 Envíos por Semana</div><div style="height:250px;"><canvas id="chartSemana"></canvas></div></div>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            const tipoLabels = { sangre:'Sangre', tejidos:'Tejidos', vacunas:'Vacunas', muestras:'Muestras', celulas:'Células', otros:'Otros' };
+            const ctx1 = document.getElementById('chartTipoCarga');
+            if (ctx1) {
+                new Chart(ctx1, { type: 'bar', data: { labels: Object.keys(cargasByType).map(k => tipoLabels[k] || k), 
+                    datasets: [{ label: 'Cantidad', data: Object.values(cargasByType), backgroundColor: '#1a6b7a', borderRadius: 8 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            }
+            const ctx2 = document.getElementById('chartSemana');
+            if (ctx2) {
+                new Chart(ctx2, { type: 'line', data: { labels: Object.keys(cargasByWeek), 
+                    datasets: [{ label: 'Envíos', data: Object.values(cargasByWeek), borderColor: '#e8b931', backgroundColor: 'rgba(232,185,49,0.1)', fill: true, tension: 0.4 }] },
+                    options: { responsive: true, maintainAspectRatio: false } });
+            }
+        }, 100);
+    },
+
+    getWeekNumber(d) {
+        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    },
+
+    calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    },
+
+    renderSettings(container) {
+        container.innerHTML = `
+            <div class="page-header"><div><h1>Configuración</h1><div class="breadcrumb">Super Admin > Configuración del Sistema</div></div></div>
+            <div class="card">
+                <div class="card-title">💰 Planes y Precios</div>
+                <div class="qr-grid mt-4">
+                    <div class="plan-card">
+                        <div class="plan-name">Starter</div>
+                        <div class="plan-price">$29.900<span>/mes</span></div>
+                        <ul class="plan-features">
+                            <li>50 Códigos QR incluidos</li>
+                            <li>3 Usuarios</li>
+                            <li>50 Cargas/mes</li>
+                            <li>Dashboard básico</li>
+                        </ul>
+                        <button class="btn btn-outline btn-block">Editar Plan</button>
+                    </div>
+                    <div class="plan-card featured">
+                        <div class="plan-name">Professional</div>
+                        <div class="plan-price">$59.900<span>/mes</span></div>
+                        <ul class="plan-features">
+                            <li>500 Códigos QR incluidos</li>
+                            <li>10 Usuarios</li>
+                            <li>500 Cargas/mes</li>
+                            <li>GPS en tiempo real</li>
+                            <li>Alertas avanzadas</li>
+                        </ul>
+                        <button class="btn btn-primary btn-block">Editar Plan</button>
+                    </div>
+                    <div class="plan-card">
+                        <div class="plan-name">Enterprise</div>
+                        <div class="plan-price">$119.900<span>/mes</span></div>
+                        <ul class="plan-features">
+                            <li>Códigos QR ilimitados</li>
+                            <li>Usuarios ilimitados</li>
+                            <li>Cargas ilimitadas</li>
+                            <li>API completa</li>
+                            <li>Soporte 24/7</li>
+                            <li>SLA 99.9%</li>
+                        </ul>
+                        <button class="btn btn-outline btn-block">Editar Plan</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    // ==================== ADMIN DASHBOARD ====================
+    renderAdminDashboard(container) {
+        const user = auth.currentUser;
+        const qrcodes = Object.values(DB.get('qrcodes')).filter(q => q.createdBy === user.email);
+        const cargas = Object.values(DB.get('cargas')).filter(c => c.adminEmail === user.email);
+        const subadmins = Object.values(DB.get('subadmins')).filter(s => s.assignedBy === user.email);
+        
+        const enTransito = cargas.filter(c => c.estado === 'en_transito').length;
+        const entregadas = cargas.filter(c => c.estado === 'entregado').length;
+        const disponibles = qrcodes.filter(q => q.status === 'disponible').length;
+        const reservados = qrcodes.filter(q => q.status === 'reservado').length;
+        
+        container.innerHTML = `
+            <div class="page-header">
+                <div>
+                    <h1>Panel de Control</h1>
+                    <div class="breadcrumb">${user.institution || 'Administrador'} > Dashboard</div>
+                </div>
+                <button class="btn btn-accent" onclick="app.navigate('qrGenerator')">+ Generar QR</button>
+            </div>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">🎫</div>
+                    <div class="metric-value">${qrcodes.length}</div>
+                    <div class="metric-label">QR Generados</div>
+                </div>
+                <div class="metric-card accent">
+                    <div class="metric-icon">✅</div>
+                    <div class="metric-value">${disponibles}</div>
+                    <div class="metric-label">Disponibles</div>
+                </div>
+                <div class="metric-card success">
+                    <div class="metric-icon">🚛</div>
+                    <div class="metric-value">${enTransito}</div>
+                    <div class="metric-label">En Tránsito</div>
+                </div>
+                <div class="metric-card danger">
+                    <div class="metric-icon">📦</div>
+                    <div class="metric-value">${entregadas}</div>
+                    <div class="metric-label">Entregadas</div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+                <div class="card">
+                    <div class="card-header">
+                        <div><div class="card-title">📦 Cargas Recientes</div><div class="card-subtitle">Últimas cargas registradas</div></div>
+                        <button class="btn btn-sm btn-outline" onclick="app.navigate('history')">Ver Todo</button>
+                    </div>
+                    ${cargas.length === 0 ? '<p style="text-align:center;color:var(--text-light);padding:20px;">No hay cargas registradas</p>' :
+                    cargas.slice(-5).reverse().map(c => `
+                        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:#fafafa;border-radius:10px;margin-bottom:8px;">
+                            <div style="width:40px;height:40px;border-radius:10px;background:var(--safer-teal);color:white;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">
+                                ${c.estado === 'entregado' ? '✅' : c.estado === 'en_transito' ? '🚛' : c.estado === 'enviado' ? '🚨' : '📦'}
+                            </div>
+                            <div style="flex:1;">
+                                <div style="font-weight:600;">${c.id}</div>
+                                <div style="font-size:0.8rem;color:var(--text-light);">${c.tipoCarga || 'Sin tipo'} • ${new Date(c.creado).toLocaleDateString('es-CL')}</div>
+                            </div>
+                            <span class="status-badge badge-${c.estado === 'disponible' ? 'disponible' : c.estado === 'enviado' ? 'enviado' : c.estado === 'en_transito' ? 'transito' : 'entregado'}">
+                                ${c.estado === 'disponible' ? 'Disponible' : c.estado === 'enviado' ? 'Enviado' : c.estado === 'en_transito' ? 'En Tránsito' : 'Entregado'}
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <div><div class="card-title">👥 Sub-Administradores</div><div class="card-subtitle">${subadmins.length} asociados</div></div>
+                        <button class="btn btn-sm btn-outline" onclick="app.navigate('subadmins')">Gestionar</button>
+                    </div>
+                    ${subadmins.length === 0 ? '<p style="text-align:center;color:var(--text-light);padding:20px;">No hay sub-administradores</p>' :
+                    subadmins.slice(0, 3).map(s => `
+                        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#fafafa;border-radius:10px;margin-bottom:8px;">
+                            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--safer-teal),var(--safer-teal-light));color:white;display:flex;align-items:center;justify-content:center;font-weight:700;">
+                                ${s.name.charAt(0)}
+                            </div>
+                            <div style="flex:1;">
+                                <div style="font-weight:600;font-size:0.9rem;">${s.name}</div>
+                                <div style="font-size:0.75rem;color:var(--text-light);">${s.email}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><div class="card-title">📊 Estadísticas de Uso</div></div>
+                <div style="height: 280px;"><canvas id="chartAdminUsage"></canvas></div>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            const ctx = document.getElementById('chartAdminUsage');
+            if (ctx) {
+                const statusCounts = { disponible: 0, enviado: 0, en_transito: 0, entregado: 0 };
+                cargas.forEach(c => statusCounts[c.estado]++);
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: { labels: ['Disponible', 'Enviado', 'En Tránsito', 'Entregado'],
+                        datasets: [{ data: [statusCounts.disponible, statusCounts.enviado, statusCounts.en_transito, statusCounts.entregado],
+                            backgroundColor: ['#27ae60', '#f39c12', '#2980b9', '#7b1fa2'], borderWidth: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+            }
+        }, 100);
+    },    // ==================== QR CODES MANAGEMENT ====================
+    renderQRCodes(container) {
+        const user = auth.currentUser;
+        const qrcodes = Object.values(DB.get('qrcodes')).filter(q => q.createdBy === user.email);
+        const subadmins = Object.values(DB.get('subadmins')).filter(s => s.assignedBy === user.email);
+        
+        container.innerHTML = `
+            <div class="page-header">
+                <div><h1>Mis Códigos QR</h1><div class="breadcrumb">Gestión de códigos QR activos</div></div>
+                <div style="display:flex;gap:10px;">
+                    <button class="btn btn-outline" onclick="app.navigate('qrGenerator')">+ Generar Nuevos</button>
+                </div>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="app.filterQR('all', this)">Todos (${qrcodes.length})</button>
+                <button class="tab" onclick="app.filterQR('disponible', this)">Disponibles (${qrcodes.filter(q=>q.status==='disponible').length})</button>
+                <button class="tab" onclick="app.filterQR('reservado', this)">Reservados (${qrcodes.filter(q=>q.status==='reservado').length})</button>
+                <button class="tab" onclick="app.filterQR('en_transito', this)">En Tránsito (${qrcodes.filter(q=>q.status==='en_transito').length})</button>
+                <button class="tab" onclick="app.filterQR('entregado', this)">Entregados (${qrcodes.filter(q=>q.status==='entregado').length})</button>
+            </div>
+            
+            <div id="qrCodesGrid" class="qr-grid">
+                ${this.renderQRGrid(qrcodes, subadmins)}
+            </div>
+        `;
+    },
+
+    renderQRGrid(qrcodes, subadmins) {
+        if (qrcodes.length === 0) {
+            return '<div style="text-align:center;padding:40px;color:var(--text-light);"><div style="font-size:3rem;margin-bottom:12px;">🎫</div><h3>Sin códigos QR</h3><p>Genera tu primer código QR para comenzar</p><button class="btn btn-primary mt-3" onclick="app.navigate(\'qrGenerator\')">Generar QR</button></div>';
+        }
+        
+        return qrcodes.map(qr => {
+            const isReserved = qr.status === 'reservado';
+            const isInTransit = qr.status === 'en_transito';
+            const reservedBy = isReserved && qr.reservedBy ? (DB.get('subadmins')[qr.reservedBy] || {}).name || qr.reservedBy : null;
+            
+            return `
+            <div class="qr-card ${isReserved ? 'reserved' : ''} ${isInTransit ? 'in-transit' : ''}" data-status="${qr.status}">
+                <div class="qr-header">
+                    <div>
+                        <div class="qr-id">${qr.id}</div>
+                        <div class="qr-meta">Creado: ${new Date(qr.created).toLocaleDateString('es-CL')}</div>
+                    </div>
+                    <span class="status-badge badge-${qr.status === 'disponible' ? 'disponible' : qr.status === 'reservado' ? 'reservado' : qr.status === 'en_transito' ? 'transito' : 'entregado'}">
+                        ${qr.status === 'disponible' ? 'Disponible' : qr.status === 'reservado' ? 'Reservado' : qr.status === 'en_transito' ? 'En Tránsito' : 'Entregado'}
+                    </span>
+                </div>
+                
+                <div style="margin: 12px 0;">
+                    ${qr.institution ? `<div style="font-size:0.85rem;color:var(--text-light);margin-bottom:4px;"><strong>Institución:</strong> ${qr.institution}</div>` : ''}
+                    ${qr.encargado ? `<div style="font-size:0.85rem;color:var(--text-light);margin-bottom:4px;"><strong>Encargado:</strong> ${qr.encargado}</div>` : ''}
+                    ${qr.contacto ? `<div style="font-size:0.85rem;color:var(--text-light);"><strong>Contacto:</strong> ${qr.contacto}</div>` : ''}
+                    ${isReserved ? `<div style="font-size:0.85rem;color:var(--warning);margin-top:8px;"><strong>Reservado por:</strong> ${reservedBy}</div>` : ''}
+                </div>
+                
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-ghost" onclick="app.editQR('${qr.id}')">✏️ Editar</button>
+                    ${qr.status === 'disponible' ? `<button class="btn btn-sm btn-outline" onclick="app.reserveQR('${qr.id}')">🔒 Reservar</button>` : ''}
+                    ${qr.status === 'en_transito' ? `<button class="btn btn-sm btn-info" onclick="app.viewQRMap('${qr.id}')">🗺️ Ver Mapa</button>` : ''}
+                    <button class="btn btn-sm btn-danger" onclick="app.deleteQR('${qr.id}')">🗑️ Eliminar</button>
+                </div>
+                
+                ${qr.status !== 'disponible' ? `
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+                    <div style="font-size:0.8rem;color:var(--text-light);">
+                        <strong>Estadísticas:</strong> ${qr.enviosCount || 0} envíos • ${qr.kmRecorridos || 0} km • ${qr.cargasTipos || 'N/A'}
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+            `;
+        }).join('');
+    },
+
+    filterQR(status, btn) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        
+        const cards = document.querySelectorAll('.qr-card');
+        cards.forEach(card => {
+            if (status === 'all' || card.dataset.status === status) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    },
+
+    editQR(qrId) {
+        const qrcodes = DB.get('qrcodes');
+        const qr = qrcodes[qrId];
+        if (!qr) return;
+        
+        this.showModal('✏️ Editar Código QR', `
+            <div class="form-group">
+                <label class="form-label">ID del Código</label>
+                <input type="text" class="form-input" id="editQRId" value="${qr.id}" readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Institución</label>
+                <input type="text" class="form-input" id="editQRInstitution" value="${qr.institution || ''}" placeholder="Nombre de la institución">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Encargado</label>
+                <input type="text" class="form-input" id="editQREncargado" value="${qr.encargado || ''}" placeholder="Nombre del encargado">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Número de Contacto</label>
+                <input type="tel" class="form-input" id="editQRContacto" value="${qr.contacto || ''}" placeholder="+56 9 XXXX XXXX">
+            </div>
+        `, () => {
+            qr.institution = document.getElementById('editQRInstitution').value;
+            qr.encargado = document.getElementById('editQREncargado').value;
+            qr.contacto = document.getElementById('editQRContacto').value;
+            qrcodes[qrId] = qr;
+            DB.set('qrcodes', qrcodes);
+            this.showToast('Código QR actualizado', 'success');
+            this.navigate('qrCodes');
+        });
+    },
+
+    reserveQR(qrId) {
+        const subadmins = Object.values(DB.get('subadmins')).filter(s => s.assignedBy === auth.currentUser.email);
+        if (subadmins.length === 0) {
+            this.showToast('No tienes sub-administradores. Crea uno primero.', 'error');
+            return;
+        }
+        
+        this.showModal('🔒 Reservar Código QR', `
+            <div class="form-group">
+                <label class="form-label">Seleccionar Sub-Administrador</label>
+                <select class="form-select" id="reserveSubAdmin">
+                    ${subadmins.map(s => `<option value="${s.email}">${s.name} (${s.email})</option>`).join('')}
+                </select>
+            </div>
+        `, () => {
+            const qrcodes = DB.get('qrcodes');
+            qrcodes[qrId].status = 'reservado';
+            qrcodes[qrId].reservedBy = document.getElementById('reserveSubAdmin').value;
+            qrcodes[qrId].reservedAt = new Date().toISOString();
+            DB.set('qrcodes', qrcodes);
+            this.showToast('Código QR reservado exitosamente', 'success');
+            this.navigate('qrCodes');
+        });
+    },
+
+    deleteQR(qrId) {
+        if (!confirm('¿Estás seguro de eliminar este código QR? Esta acción no se puede deshacer.')) return;
+        const qrcodes = DB.get('qrcodes');
+        delete qrcodes[qrId];
+        DB.set('qrcodes', qrcodes);
+        this.showToast('Código QR eliminado', 'success');
+        this.navigate('qrCodes');
+    },
+
+    viewQRMap(qrId) {
+        const cargas = Object.values(DB.get('cargas')).filter(c => c.qrId === qrId && c.estado === 'en_transito');
+        const carga = cargas[0];
+        if (!carga) {
+            this.showToast('No hay cargas en tránsito para este QR', 'error');
+            return;
+        }
+        
+        const gps = DB.get('gps');
+        const route = gps[carga.id] || [];
+        
+        this.showModal('🗺️ Georeferencia en Tiempo Real', `
+            <div class="map-container" style="height:350px;">
+                ${route.length > 0 ? `
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d2000!2d${route[route.length-1].lng}!3d${route[route.length-1].lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1ses!2scl!4v1" allowfullscreen></iframe>
+                    <div class="map-overlay">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div class="gps-dot"></div>
+                            <span>En vivo • ${route.length} puntos</span>
+                        </div>
+                    </div>
+                ` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-light);">Sin datos de GPS disponibles</div>'}
+            </div>
+            <div style="margin-top:12px;font-size:0.85rem;color:var(--text-light);">
+                <strong>Carga:</strong> ${carga.id} | <strong>Transportista:</strong> ${carga.transporte?.conductor || 'N/A'} | <strong>Última actualización:</strong> ${route.length > 0 ? new Date(route[route.length-1].timestamp).toLocaleTimeString('es-CL') : 'N/A'}
+            </div>
+        `, null, true);
+    },
+
+    // ==================== QR GENERATOR ====================
+    renderQRGenerator(container) {
+        const user = auth.currentUser;
+        const admin = DB.get('admins')[user.email] || {};
+        const settings = DB.get('settings');
+        const qrGenerated = admin.qrGenerated || 0;
+        const qrLimit = admin.qrLimit || 500;
+        const remaining = Math.max(0, qrLimit === -1 ? 999999 : qrLimit - qrGenerated);
+        
+        container.innerHTML = `
+            <div class="page-header">
+                <div><h1>Generador de QR</h1><div class="breadcrumb">Crear nuevos códigos QR</div></div>
+            </div>
+            
+            <div class="alert alert-info">
+                <span style="font-size:1.5rem;">📊</span>
+                <div>
+                    <strong>Uso de tu plan:</strong> ${qrGenerated} QR generados de ${qrLimit === -1 ? 'ilimitados' : qrLimit} disponibles
+                    ${remaining <= 10 && qrLimit !== -1 ? '<br><span style="color:var(--danger);">⚠️ Estás cerca de tu límite. Compra más códigos abajo.</span>' : ''}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header"><div class="card-title">⚙️ Configuración de Generación</div></div>
+                <div class="form-group">
+                    <label class="form-label">Cantidad de Códigos QR a Generar</label>
+                    <input type="number" class="form-input" id="qrCantidad" value="10" min="1" max="1000">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Prefijo de ID</label>
+                    <input type="text" class="form-input" id="qrPrefijo" value="BIO" style="text-transform:uppercase;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Institución (por defecto)</label>
+                    <input type="text" class="form-input" id="qrInstitucion" value="${user.institution || ''}" placeholder="Nombre de tu institución">
+                </div>
+                <button class="btn btn-primary btn-lg btn-block" onclick="app.generateQRCodes()">
+                    🎫 Generar Códigos QR
+                </button>
+            </div>
+            
+            ${qrLimit !== -1 ? `
+            <div class="card">
+                <div class="card-header"><div class="card-title">💳 Comprar Códigos Adicionales</div></div>
+                <div class="qr-grid">
+                    ${settings.qrPackages.map(pkg => `
+                        <div class="plan-card">
+                            <div class="plan-name">${pkg.name}</div>
+                            <div class="plan-price">$${pkg.price.toLocaleString('es-CL')}<span>CLP</span></div>
+                            <ul class="plan-features">
+                                <li>${pkg.quantity} Códigos QR</li>
+                                <li>Sin expiración</li>
+                                <li>Uso inmediato</li>
+                            </ul>
+                            <button class="btn btn-accent btn-block" onclick="app.buyQRPackage('${pkg.name}', ${pkg.quantity}, ${pkg.price})">Comprar Ahora</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="text-align:center;margin-top:16px;color:var(--text-light);font-size:0.85rem;">
+                    💡 También puedes <strong>actualizar tu plan</strong> en la sección de Pagos para obtener más códigos mensuales.
+                </div>
+            </div>
+            ` : ''}
+        `;
+    },
+
+    generateQRCodes() {
+        const cantidad = parseInt(document.getElementById('qrCantidad').value) || 10;
+        const prefijo = (document.getElementById('qrPrefijo').value || 'BIO').toUpperCase();
+        const institucion = document.getElementById('qrInstitucion').value || '';
+        const user = auth.currentUser;
+        const admin = DB.get('admins')[user.email] || {};
+        const qrLimit = admin.qrLimit || 500;
+        const qrGenerated = admin.qrGenerated || 0;
+        
+        if (qrLimit !== -1 && qrGenerated + cantidad > qrLimit) {
+            this.showModal('⚠️ Límite Excedido', `
+                <p>Intentas generar ${cantidad} códigos pero solo te quedan ${qrLimit - qrGenerated} disponibles en tu plan.</p>
+                <p style="margin-top:12px;">¿Deseas comprar más códigos o actualizar tu plan?</p>
+            `, () => this.navigate('payments'));
+            return;
+        }
+        
+        const qrcodes = DB.get('qrcodes');
+        let lastNum = 0;
+        Object.keys(qrcodes).forEach(k => {
+            const match = k.match(new RegExp('^' + prefijo + '-(\\d+)$'));
+            if (match) lastNum = Math.max(lastNum, parseInt(match[1]));
+        });
+        
+        for (let i = 1; i <= cantidad; i++) {
+            const id = prefijo + '-' + String(lastNum + i).padStart(6, '0');
+            qrcodes[id] = {
+                id: id, createdBy: user.email, adminEmail: user.email,
+                status: 'disponible', institution: institucion,
+                created: new Date().toISOString(), enviosCount: 0, kmRecorridos: 0, cargasTipos: ''
+            };
+        }
+        DB.set('qrcodes', qrcodes);
+        
+        admin.qrGenerated = qrGenerated + cantidad;
+        const admins = DB.get('admins');
+        admins[user.email] = admin;
+        DB.set('admins', admins);
+        
+        this.showToast('✅ ' + cantidad + ' códigos QR generados exitosamente', 'success');
+        this.navigate('qrCodes');
+    },
+
+    buyQRPackage(name, quantity, price) {
+        this.showModal('💳 Confirmar Compra', `
+            <div style="text-align:center;padding:20px;">
+                <div style="font-size:3rem;margin-bottom:12px;">🎫</div>
+                <h3>${name}</h3>
+                <p style="font-size:1.3rem;color:var(--safer-teal);font-weight:700;">$${price.toLocaleString('es-CL')} CLP</p>
+                <p style="color:var(--text-light);">${quantity} códigos QR adicionales</p>
+                <div style="margin-top:16px;padding:12px;background:#f8f9fa;border-radius:8px;font-size:0.85rem;">
+                    <strong>Medios de pago simulados:</strong><br>
+                    💳 Tarjeta de Crédito | 🏦 Transferencia | 📱 WebPay
+                </div>
+            </div>
+        `, () => {
+            const payments = DB.get('payments');
+            const paymentId = 'PAY-' + Date.now();
+            payments[paymentId] = {
+                id: paymentId, adminEmail: auth.currentUser.email, type: 'qr_package',
+                packageName: name, quantity: quantity, amount: price,
+                status: 'pagado', date: new Date().toISOString()
+            };
+            DB.set('payments', payments);
+            
+            const admin = DB.get('admins')[auth.currentUser.email] || {};
+            admin.qrLimit = (admin.qrLimit || 0) + quantity;
+            const admins = DB.get('admins');
+            admins[auth.currentUser.email] = admin;
+            DB.set('admins', admins);
+            
+            this.showToast('✅ Compra exitosa. ' + quantity + ' códigos añadidos.', 'success');
+            this.navigate('qrGenerator');
+        });
+    },
+
+    // ==================== SUB-ADMINS ====================
+    renderSubAdmins(container) {
+        const user = auth.currentUser;
+        const subadmins = Object.values(DB.get('subadmins')).filter(s => s.assignedBy === user.email);
+        const qrcodes = Object.values(DB.get('qrcodes')).filter(q => q.createdBy === user.email);
+        
+        container.innerHTML = `
+            <div class="page-header">
+                <div><h1>Sub-Administradores</h1><div class="breadcrumb">Gestión de sub-administradores</div></div>
+                <button class="btn btn-primary" onclick="app.showAddSubAdmin()">+ Agregar Sub-Admin</button>
+            </div>
+            
+            <div class="card">
+                <div class="card-header"><div class="card-title">👥 Listado de Sub-Administradores</div></div>
+                ${subadmins.length === 0 ? '<p style="text-align:center;color:var(--text-light);padding:30px;">No hay sub-administradores. Agrega uno para que puedan gestionar códigos QR.</p>' :
+                subadmins.map(s => {
+                    const qrUsed = qrcodes.filter(q => q.reservedBy === s.email).length;
+                    return `
+                    <div class="subadmin-card">
+                        <div class="subadmin-avatar">${s.name.charAt(0)}</div>
+                        <div class="subadmin-info">
+                            <div class="subadmin-name">${s.name} ${s.lastname || ''}</div>
+                            <div class="subadmin-meta">📧 ${s.email} ${s.phone ? '• 📱 ' + s.phone : ''}</div>
+                            <div class="subadmin-meta">🎫 ${qrUsed} QR reservados/usados</div>
+                        </div>
+                        <div class="subadmin-actions">
+                            <button class="btn btn-sm btn-ghost" onclick="app.viewSubAdminQR('${s.email}')">🎫 Ver QR</button>
+                            <button class="btn btn-sm btn-danger" onclick="app.removeSubAdmin('${s.email}')">🗑️</button>
+                        </div>
+                    </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    },
+
+    showAddSubAdmin() {
+        this.showModal('👤 Agregar Sub-Administrador', `
+            <div class="form-group">
+                <label class="form-label">Nombre *</label>
+                <input type="text" class="form-input" id="subName" placeholder="Nombre">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Apellido *</label>
+                <input type="text" class="form-input" id="subLastname" placeholder="Apellido">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Correo Electrónico *</label>
+                <input type="email" class="form-input" id="subEmail" placeholder="subadmin@email.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Número Telefónico</label>
+                <input type="tel" class="form-input" id="subPhone" placeholder="+56 9 XXXX XXXX">
+            </div>
+        `, () => {
+            const name = document.getElementById('subName').value.trim();
+            const lastname = document.getElementById('subLastname').value.trim();
+            const email = document.getElementById('subEmail').value.trim();
+            const phone = document.getElementById('subPhone').value.trim();
+            
+            if (!name || !lastname || !email) {
+                this.showToast('Completa todos los campos obligatorios', 'error'); return;
+            }
+            
+            const subadmins = DB.get('subadmins');
+            subadmins[email] = {
+                email: email, name: name, lastname: lastname, phone: phone,
+                assignedBy: auth.currentUser.email, qrReserved: [],
+                created: new Date().toISOString()
+            };
+            DB.set('subadmins', subadmins);
+            
+            const users = DB.get('users');
+            users[email] = {
+                email: email, password: '123456', role: 'subadmin',
+                name: name + ' ' + lastname, phone: phone,
+                created: new Date().toISOString()
+            };
+            DB.set('users', users);
+            
+            const admins = DB.get('admins');
+            if (!admins[auth.currentUser.email].subadmins) admins[auth.currentUser.email].subadmins = [];
+            admins[auth.currentUser.email].subadmins.push(email);
+            DB.set('admins', admins);
+            
+            this.showToast('Sub-administrador agregado exitosamente', 'success');
+            this.navigate('subadmins');
+        });
+    },
+
+    viewSubAdminQR(email) {
+        const qrcodes = Object.values(DB.get('qrcodes')).filter(q => q.reservedBy === email || (q.carga && q.carga.subadminEmail === email));
+        const subadmin = DB.get('subadmins')[email];
+        
+        this.showModal('🎫 QR Usados por ' + (subadmin ? subadmin.name : email), `
+            ${qrcodes.length === 0 ? '<p style="text-align:center;padding:20px;">Este sub-administrador no ha usado ningún QR.</p>' :
+            qrcodes.map(qr => `
+                <div style="padding:10px;background:#f8f9fa;border-radius:8px;margin-bottom:8px;">
+                    <strong>${qr.id}</strong> • ${qr.status === 'reservado' ? 'Reservado' : qr.status === 'en_transito' ? 'En Tránsito' : qr.status === 'entregado' ? 'Entregado' : 'Disponible'}
+                    ${qr.institution ? '<br><small>Inst: ' + qr.institution + '</small>' : ''}
+                </div>
+            `).join('')}
+        `, null, true);
+    },
+
+    removeSubAdmin(email) {
+        if (!confirm('¿Eliminar este sub-administrador? Los códigos reservados quedarán disponibles.')) return;
+        
+        const subadmins = DB.get('subadmins');
+        delete subadmins[email];
+        DB.set('subadmins', subadmins);
+        
+        const qrcodes = DB.get('qrcodes');
+        Object.values(qrcodes).forEach(qr => {
+            if (qr.reservedBy === email) {
+                qr.status = 'disponible';
+                delete qr.reservedBy;
+                delete qr.reservedAt;
+            }
+        });
+        DB.set('qrcodes', qrcodes);
+        
+        this.showToast('Sub-administrador eliminado', 'success');
+        this.navigate('subadmins');
+    },
+
+    // ==================== PAYMENTS ====================
+    renderPayments(container) {
+        const user = auth.currentUser;
+        const payments = Object.values(DB.get('payments')).filter(p => p.adminEmail === user.email);
+        const settings = DB.get('settings');
+        const admin = DB.get('admins')[user.email] || {};
+        const currentPlan = settings.plans[admin.plan || 'starter'];
+        
+        container.innerHTML = `
+            <div class="page-header">
+                <div><h1>Pagos y Planes</h1><div class="breadcrumb">Gestión de suscripción y pagos</div></div>
+            </div>
+            
+            <div class="card" style="background:linear-gradient(135deg,var(--safer-teal),var(--safer-teal-light));color:white;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <div style="font-size:0.8rem;opacity:0.8;text-transform:uppercase;letter-spacing:1px;">Plan Actual</div>
+                        <div style="font-size:1.5rem;font-weight:700;margin-top:4px;">${currentPlan.name}</div>
+                        <div style="font-size:0.9rem;opacity:0.9;margin-top:4px;">$${currentPlan.price.toLocaleString('es-CL')}/mes • ${currentPlan.qrLimit === -1 ? 'QR Ilimitados' : currentPlan.qrLimit + ' QR/mes'}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.8rem;opacity:0.8;">Próximo cobro</div>
+                        <div style="font-size:1.1rem;font-weight:600;">${new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('es-CL')}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">🔄 Cambiar de Plan</div>
+                <div class="qr-grid mt-3">
+                    ${Object.entries(settings.plans).map(([key, plan]) => `
+                        <div class="plan-card ${admin.plan === key ? 'featured' : ''}">
+                            <div class="plan-name">${plan.name}</div>
+                            <div class="plan-price">$${plan.price.toLocaleString('es-CL')}<span>/mes</span></div>
+                            <ul class="plan-features">
+                                <li>${plan.qrLimit === -1 ? 'QR Ilimitados' : plan.qrLimit + ' QR/mes'}</li>
+                                <li>${plan.users === -1 ? 'Usuarios Ilimitados' : plan.users + ' Usuarios'}</li>
+                                <li>${plan.cargas === -1 ? 'Cargas Ilimitadas' : plan.cargas + ' Cargas/mes'}</li>
+                            </ul>
+                            ${admin.plan !== key ? `<button class="btn btn-primary btn-block" onclick="app.changePlan('${key}')">Cambiar a ${plan.name}</button>` : '<button class="btn btn-block" disabled>Plan Actual</button>'}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header"><div class="card-title">🧾 Historial de Pagos</div></div>
+                <table class="data-table">
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Estado</th></tr></thead>
+                    <tbody>
+                        ${payments.length === 0 ? '<tr><td colspan="4" style="text-align:center;padding:20px;">Sin pagos registrados</td></tr>' :
+                        payments.map(p => `<tr>
+                            <td>${new Date(p.date).toLocaleDateString('es-CL')}</td>
+                            <td>${p.type === 'subscription' ? 'Suscripción ' + p.planName : 'Paquete ' + p.packageName}</td>
+                            <td>$${p.amount.toLocaleString('es-CL')}</td>
+                            <td><span class="status-badge badge-pagado">Pagado</span></td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">💳 Medios de Pago Digital</div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;">
+                    <div style="padding:16px;background:#f8f9fa;border-radius:12px;text-align:center;">
+                        <div style="font-size:2rem;margin-bottom:8px;">💳</div>
+                        <div style="font-weight:600;">Tarjeta de Crédito</div>
+                        <div style="font-size:0.8rem;color:var(--text-light);">Visa, Mastercard, Amex</div>
+                    </div>
+                    <div style="padding:16px;background:#f8f9fa;border-radius:12px;text-align:center;">
+                        <div style="font-size:2rem;margin-bottom:8px;">🏦</div>
+                        <div style="font-weight:600;">Transferencia</div>
+                        <div style="font-size:0.8rem;color:var(--text-light);">Bancos chilenos</div>
+                    </div>
+                    <div style="padding:16px;background:#f8f9fa;border-radius:12px;text-align:center;">
+                        <div style="font-size:2rem;margin-bottom:8px;">📱</div>
+                        <div style="font-weight:600;">WebPay / Flow</div>
+                        <div style="font-size:0.8rem;color:var(--text-light);">Pago instantáneo</div>
+                    </div>
+                </div>
+                <div style="margin-top:16px;padding:12px;background:#e8f5e9;border-radius:8px;font-size:0.85rem;color:#2e7d32;">
+                    ✅ Los cobros se automatizan mensualmente. Recibirás notificación 3 días antes de cada cobro.
+                </div>
+            </div>
+        `;
+    },
+
+    changePlan(planKey) {
+        const settings = DB.get('settings');
+        const plan = settings.plans[planKey];
+        
+        this.showModal('🔄 Confirmar Cambio de Plan', `
+            <div style="text-align:center;padding:20px;">
+                <h3>${plan.name}</h3>
+                <p style="font-size:1.3rem;color:var(--safer-teal);font-weight:700;">$${plan.price.toLocaleString('es-CL')}/mes</p>
+                <ul style="text-align:left;margin:16px 0;">
+                    <li>✓ ${plan.qrLimit === -1 ? 'QR Ilimitados' : plan.qrLimit + ' QR/mes'}</li>
+                    <li>✓ ${plan.users === -1 ? 'Usuarios Ilimitados' : plan.users + ' Usuarios'}</li>
+                    <li>✓ ${plan.cargas === -1 ? 'Cargas Ilimitadas' : plan.cargas + ' Cargas/mes'}</li>
+                </ul>
+                <p style="font-size:0.85rem;color:var(--text-light);">El cambio se aplicará en el próximo ciclo de facturación.</p>
+            </div>
+        `, () => {
+            const admins = DB.get('admins');
+            admins[auth.currentUser.email].plan = planKey;
+            admins[auth.currentUser.email].qrLimit = plan.qrLimit === -1 ? -1 : plan.qrLimit;
+            DB.set('admins', admins);
+            
+            const payments = DB.get('payments');
+            payments['PAY-' + Date.now()] = {
+                id: 'PAY-' + Date.now(), adminEmail: auth.currentUser.email,
+                type: 'subscription', planName: plan.name, amount: plan.price,
+                status: 'pagado', date: new Date().toISOString()
+            };
+            DB.set('payments', payments);
+            
+            this.showToast('Plan actualizado exitosamente', 'success');
+            this.navigate('payments');
+        });
+    },    // ==================== ADMIN STATS ====================
+    renderAdminStats(container) {
+        const user = auth.currentUser;
+        const qrcodes = Object.values(DB.get('qrcodes')).filter(q => q.createdBy === user.email);
+        const cargas = Object.values(DB.get('cargas')).filter(c => c.adminEmail === user.email);
+        const subadmins = Object.values(DB.get('subadmins')).filter(s => s.assignedBy === user.email);
+        
+        const qrStats = qrcodes.map(qr => {
+            const qrCargas = cargas.filter(c => c.qrId === qr.id);
+            const envios = qrCargas.length;
+            const tipos = [...new Set(qrCargas.map(c => c.tipoCarga).filter(Boolean))].join(', ') || 'N/A';
+            const gps = DB.get('gps');
+            let km = 0;
+            qrCargas.forEach(c => {
+                const route = gps[c.id] || [];
+                for (let i = 1; i < route.length; i++) {
+                    km += this.calculateDistance(route[i-1].lat, route[i-1].lng, route[i].lat, route[i].lng);
+                }
+            });
+            return { ...qr, enviosCount: envios, cargasTipos: tipos, kmRecorridos: Math.round(km) };
+        });
+        
+        const weekly = {};
+        cargas.forEach(c => {
+            const week = this.getWeekNumber(new Date(c.creado));
+            weekly['Sem ' + week] = (weekly['Sem ' + week] || 0) + 1;
+        });
+        
+        container.innerHTML = `
+            <div class="page-header"><div><h1>Estadísticas</h1><div class="breadcrumb">Métricas detalladas de tu cuenta</div></div></div>
+            
+            <div class="metrics-grid">
+                <div class="metric-card"><div class="metric-icon">🎫</div><div class="metric-value">${qrcodes.length}</div><div class="metric-label">QR Totales</div></div>
+                <div class="metric-card accent"><div class="metric-icon">📦</div><div class="metric-value">${cargas.length}</div><div class="metric-label">Cargas Totales</div></div>
+                <div class="metric-card success"><div class="metric-icon">🚛</div><div class="metric-value">${cargas.filter(c=>c.estado==='en_transito').length}</div><div class="metric-label">En Tránsito</div></div>
+                <div class="metric-card danger"><div class="metric-icon">👥</div><div class="metric-value">${subadmins.length}</div><div class="metric-label">Sub-Admins</div></div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header"><div class="card-title">📊 Estadísticas por Código QR</div></div>
+                <table class="data-table">
+                    <thead><tr><th>ID QR</th><th>Envíos</th><th>Tipos de Carga</th><th>Km Recorridos</th><th>Estado</th></tr></thead>
+                    <tbody>
+                        ${qrStats.length === 0 ? '<tr><td colspan="5" style="text-align:center;padding:20px;">Sin datos</td></tr>' :
+                        qrStats.map(qr => `<tr>
+                            <td><strong>${qr.id}</strong></td>
+                            <td>${qr.enviosCount}</td>
+                            <td>${qr.cargasTipos}</td>
+                            <td>${qr.kmRecorridos} km</td>
+                            <td><span class="status-badge badge-${qr.status === 'disponible' ? 'disponible' : qr.status === 'reservado' ? 'reservado' : qr.status === 'en_transito' ? 'transito' : 'entregado'}">${qr.status}</span></td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="card">
+                <div class="card-header"><div class="card-title">📅 Envíos por Semana</div></div>
+                <div style="height:250px;"><canvas id="chartAdminWeekly"></canvas></div>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            const ctx = document.getElementById('chartAdminWeekly');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: Object.keys(weekly), datasets: [{ label: 'Envíos', data: Object.values(weekly), backgroundColor: '#1a6b7a', borderRadius: 8 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            }
+        }, 100);
+    },
+
+    // ==================== TRANSIT / HISTORY ====================
+    renderTransit(container) {
+        const user = auth.currentUser;
+        const cargas = Object.values(DB.get('cargas')).filter(c => 
+            c.adminEmail === user.email && c.estado === 'en_transito'
+        );
+        
+        container.innerHTML = `
+            <div class="page-header"><div><h1>🚛 Cargas en Tránsito</h1><div class="breadcrumb">Seguimiento en tiempo real</div></div></div>
+            ${cargas.length === 0 ? '<div class="card" style="text-align:center;padding:40px;"><div style="font-size:3rem;">🚛</div><h3>Sin cargas en tránsito</h3><p style="color:var(--text-light);">Las cargas activas aparecerán aquí</p></div>' :
+            cargas.map(c => {
+                const gps = DB.get('gps');
+                const route = gps[c.id] || [];
+                const lastPos = route.length > 0 ? route[route.length - 1] : null;
+                return `
+                <div class="card">
+                    <div class="card-header">
+                        <div><div class="card-title">${c.id}</div><div class="card-subtitle">${c.tipoCarga || 'Sin tipo'} • ${c.transporte?.empresa || 'N/A'}</div></div>
+                        <span class="status-badge badge-transito">En Tránsito</span>
+                    </div>
+                    <div class="gps-panel">
+                        <div class="gps-header"><div class="gps-dot"></div><div><div style="font-weight:700;">📍 Rastreo GPS Activo</div></div></div>
+                        <div class="gps-coords">${lastPos ? 'Lat: ' + lastPos.lat.toFixed(6) + ' | Lng: ' + lastPos.lng.toFixed(6) : 'Sin datos de ubicación'}</div>
+                        <div class="map-container" style="height:200px;margin-top:12px;">
+                            ${lastPos ? `<iframe src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d2000!2d${lastPos.lng}!3d${lastPos.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1ses!2scl!4v1" allowfullscreen></iframe>` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;">Esperando señal GPS...</div>'}
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-top:12px;">
+                        <button class="btn btn-info" onclick="app.viewTransitMap('${c.id}')">🗺️ Mapa Completo</button>
+                        <button class="btn btn-outline" onclick="app.viewCargaDetails('${c.id}')">📋 Detalles</button>
+                    </div>
+                </div>
+                `;
+            }).join('')}
+        `;
+    },
+
+    renderHistory(container) {
+        const user = auth.currentUser;
+        const cargas = Object.values(DB.get('cargas')).filter(c => c.adminEmail === user.email).sort((a,b) => new Date(b.creado) - new Date(a.creado));
+        
+        container.innerHTML = `
+            <div class="page-header"><div><h1>📋 Historial de Cargas</h1><div class="breadcrumb">Todas las cargas registradas</div></div></div>
+            <div class="card">
+                <table class="data-table">
+                    <thead><tr><th>ID</th><th>Tipo</th><th>Estado</th><th>Remitente</th><th>Destino</th><th>Fecha</th><th>Acciones</th></tr></thead>
+                    <tbody>
+                        ${cargas.length === 0 ? '<tr><td colspan="7" style="text-align:center;padding:30px;">Sin cargas registradas</td></tr>' :
+                        cargas.map(c => `<tr>
+                            <td><strong>${c.id}</strong></td>
+                            <td>${c.tipoCarga || 'N/A'}</td>
+                            <td><span class="status-badge badge-${c.estado === 'disponible' ? 'disponible' : c.estado === 'enviado' ? 'enviado' : c.estado === 'en_transito' ? 'transito' : 'entregado'}">${c.estado}</span></td>
+                            <td>${c.remitente?.nombre || 'N/A'}</td>
+                            <td>${c.destinatario?.institucion || 'N/A'}</td>
+                            <td>${new Date(c.creado).toLocaleDateString('es-CL')}</td>
+                            <td><button class="btn btn-sm btn-ghost" onclick="app.viewCargaDetails('${c.id}')">👁️</button></td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    },
+
+    viewTransitMap(cargaId) {
+        const gps = DB.get('gps');
+        const route = gps[cargaId] || [];
+        this.showModal('🗺️ Ruta Completa', `
+            <div class="map-container" style="height:400px;">
+                ${route.length > 0 ? `<iframe src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d2000!2d${route[route.length-1].lng}!3d${route[route.length-1].lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1ses!2scl!4v1" allowfullscreen></iframe>` : 'Sin datos'}
+            </div>
+            <div style="margin-top:12px;"><strong>${route.length}</strong> puntos de rastreo registrados</div>
+        `, null, true);
+    },
+
+    viewCargaDetails(cargaId) {
+        const cargas = DB.get('cargas');
+        const c = cargas[cargaId];
+        if (!c) return;
+        
+        this.showModal('📋 Detalle de Carga ' + c.id, `
+            <div class="form-group"><label class="form-label">ID</label><input class="form-input" value="${c.id}" readonly></div>
+            <div class="form-group"><label class="form-label">Estado</label><input class="form-input" value="${c.estado}" readonly></div>
+            <div class="form-group"><label class="form-label">Tipo</label><input class="form-input" value="${c.tipoCarga || 'N/A'}" readonly></div>
+            <div class="form-group"><label class="form-label">Descripción</label><textarea class="form-textarea" readonly>${c.descripcion || ''}</textarea></div>
+            <div class="form-group"><label class="form-label">Remitente</label><input class="form-input" value="${c.remitente?.nombre || 'N/A'} - ${c.remitente?.institucion || ''}" readonly></div>
+            <div class="form-group"><label class="form-label">Destinatario</label><input class="form-input" value="${c.destinatario?.nombre || 'N/A'} - ${c.destinatario?.institucion || ''}" readonly></div>
+            <div class="form-group"><label class="form-label">Transporte</label><input class="form-input" value="${c.transporte?.empresa || 'N/A'} - ${c.transporte?.conductor || ''}" readonly></div>
+        `, null, true);
+    },
+
+    // ==================== SUB-ADMIN PANEL ====================
+    renderSubAdminQRCodes(container) {
+        const user = auth.currentUser;
+        const allQR = Object.values(DB.get('qrcodes'));
+        const availableQR = allQR.filter(q => q.status === 'disponible');
+        const myReserved = allQR.filter(q => q.reservedBy === user.email);
+        const myUsed = allQR.filter(q => q.status === 'en_transito' && q.reservedBy === user.email);
+        
+        container.innerHTML = `
+            <div class="page-header"><div><h1>🎫 Códigos QR</h1><div class="breadcrumb">Sub-Administrador > Gestión de códigos</div></div></div>
+            
+            <div class="metrics-grid">
+                <div class="metric-card"><div class="metric-icon">✅</div><div class="metric-value">${availableQR.length}</div><div class="metric-label">Disponibles</div></div>
+                <div class="metric-card accent"><div class="metric-icon">🔒</div><div class="metric-value">${myReserved.length}</div><div class="metric-label">Mis Reservados</div></div>
+                <div class="metric-card success"><div class="metric-icon">🚛</div><div class="metric-value">${myUsed.length}</div><div class="metric-label">En Tránsito</div></div>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="app.filterSubQR('available', this)">Disponibles</button>
+                <button class="tab" onclick="app.filterSubQR('reserved', this)">Mis Reservados</button>
+            </div>
+            
+            <div id="subQRGrid" class="qr-grid">
+                ${availableQR.map(qr => `
+                    <div class="qr-card" data-filter="available">
+                        <div class="qr-header">
+                            <div><div class="qr-id">${qr.id}</div><div class="qr-meta">${qr.institution || 'Sin institución'}</div></div>
+                            <span class="status-badge badge-disponible">Disponible</span>
+                        </div>
+                        <div style="margin-top:12px;">
+                            ${qr.encargado ? `<div style="font-size:0.85rem;color:var(--text-light);"><strong>Encargado:</strong> ${qr.encargado}</div>` : ''}
+                            ${qr.contacto ? `<div style="font-size:0.85rem;color:var(--text-light);"><strong>Contacto:</strong> ${qr.contacto}</div>` : ''}
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:16px;">
+                            <button class="btn btn-sm btn-primary" onclick="app.subAdminReserveQR('${qr.id}')">🔒 Reservar</button>
+                            <button class="btn btn-sm btn-ghost" onclick="app.subAdminEditQR('${qr.id}')">✏️ Editar</button>
+                        </div>
+                    </div>
+                `).join('')}
+                ${myReserved.map(qr => `
+                    <div class="qr-card reserved" data-filter="reserved" style="display:none;">
+                        <div class="qr-header">
+                            <div><div class="qr-id">${qr.id}</div><div class="qr-meta">${qr.institution || 'Sin institución'}</div></div>
+                            <span class="status-badge badge-reservado">Reservado</span>
+                        </div>
+                        <div style="margin-top:12px;">
+                            ${qr.encargado ? `<div style="font-size:0.85rem;color:var(--text-light);"><strong>Encargado:</strong> ${qr.encargado}</div>` : ''}
+                            ${qr.contacto ? `<div style="font-size:0.85rem;color:var(--text-light);"><strong>Contacto:</strong> ${qr.contacto}</div>` : ''}
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:16px;">
+                            <button class="btn btn-sm btn-accent" onclick="app.subAdminActivateTransit('${qr.id}')">🚀 Activar Tránsito</button>
+                            <button class="btn btn-sm btn-outline" onclick="app.subAdminReleaseQR('${qr.id}')">🔓 Liberar</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    },
+
+    filterSubQR(filter, btn) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('#subQRGrid .qr-card').forEach(card => {
+            card.style.display = card.dataset.filter === filter ? 'block' : 'none';
+        });
+    },
+
+    subAdminReserveQR(qrId) {
+        const qrcodes = DB.get('qrcodes');
+        qrcodes[qrId].status = 'reservado';
+        qrcodes[qrId].reservedBy = auth.currentUser.email;
+        qrcodes[qrId].reservedAt = new Date().toISOString();
+        DB.set('qrcodes', qrcodes);
+        this.showToast('Código QR reservado', 'success');
+        this.navigate('qrCodes');
+    },
+
+    subAdminReleaseQR(qrId) {
+        const qrcodes = DB.get('qrcodes');
+        qrcodes[qrId].status = 'disponible';
+        delete qrcodes[qrId].reservedBy;
+        delete qrcodes[qrId].reservedAt;
+        DB.set('qrcodes', qrcodes);
+        this.showToast('Código QR liberado', 'success');
+        this.navigate('qrCodes');
+    },
+
+    subAdminEditQR(qrId) {
+        this.editQR(qrId);
+    },
+
+    subAdminActivateTransit(qrId) {
+        const qrcodes = DB.get('qrcodes');
+        const qr = qrcodes[qrId];
+        
+        this.showModal('🚀 Activar Modo Tránsito', `
+            <div class="alert alert-warning">
+                <strong>⚠️ Importante:</strong> Debes asociar un correo electrónico del destinatario para enviar notificaciones.
+            </div>
+            <div class="form-group">
+                <label class="form-label">Correo del Destinatario *</label>
+                <input type="email" class="form-input" id="transitDestEmail" placeholder="destinatario@email.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Nombre del Destinatario</label>
+                <input type="text" class="form-input" id="transitDestName" placeholder="Nombre completo">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Institución Destino</label>
+                <input type="text" class="form-input" id="transitDestInst" placeholder="Hospital, clínica...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Dirección de Entrega</label>
+                <input type="text" class="form-input" id="transitDestDir" placeholder="Dirección completa">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tipo de Carga</label>
+                <select class="form-select" id="transitTipoCarga">
+                    <option value="sangre">Sangre / Derivados</option>
+                    <option value="tejidos">Tejidos / Órganos</option>
+                    <option value="vacunas">Vacunas / Biológicos</option>
+                    <option value="muestras">Muestras de Laboratorio</option>
+                    <option value="celulas">Células / Cultivos</option>
+                    <option value="otros">Otros</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descripción</label>
+                <textarea class="form-textarea" id="transitDesc" placeholder="Descripción detallada de la carga"></textarea>
+            </div>
+        `, () => {
+            const destEmail = document.getElementById('transitDestEmail').value.trim();
+            if (!destEmail) { this.showToast('Correo del destinatario es obligatorio', 'error'); return; }
+            
+            const cargas = DB.get('cargas');
+            const cargaId = qrId;
+            cargas[cargaId] = {
+                id: cargaId, qrId: qrId, estado: 'enviado',
+                adminEmail: qr.createdBy, subadminEmail: auth.currentUser.email,
+                tipoCarga: document.getElementById('transitTipoCarga').value,
+                descripcion: document.getElementById('transitDesc').value,
+                destinatario: {
+                    email: destEmail, nombre: document.getElementById('transitDestName').value,
+                    institucion: document.getElementById('transitDestInst').value,
+                    direccion: document.getElementById('transitDestDir').value
+                },
+                creado: new Date().toISOString(),
+                historial: [{ fecha: new Date().toISOString(), accion: 'Modo tránsito activado por sub-admin', actor: auth.currentUser.name }]
+            };
+            DB.set('cargas', cargas);
+            
+            qrcodes[qrId].status = 'enviado';
+            qrcodes[qrId].cargaId = cargaId;
+            DB.set('qrcodes', qrcodes);
+            
+            this.sendNotification('destinatario', destEmail, 'Carga en Tránsito', 'Su carga ' + qrId + ' está en tránsito. Puede rastrearla en tiempo real.');
+            this.sendNotification('admin', qr.createdBy, 'Carga Activada', 'El sub-admin ' + auth.currentUser.name + ' activó el modo tránsito para ' + qrId);
+            
+            this.showToast('✅ Modo tránsito activado. Notificaciones enviadas.', 'success');
+            this.navigate('transit');
+        });
+    },
+
+    renderSubAdminTransit(container) {
+        const user = auth.currentUser;
+        const cargas = Object.values(DB.get('cargas')).filter(c => c.subadminEmail === user.email && c.estado === 'en_transito');
+        
+        container.innerHTML = `
+            <div class="page-header"><div><h1>🚛 Activar Tránsito</h1><div class="breadcrumb">Gestión de cargas en tránsito</div></div></div>
+            ${cargas.length === 0 ? '<div class="card" style="text-align:center;padding:40px;"><div style="font-size:3rem;">🚛</div><h3>Sin cargas en tránsito</h3><p>Reserva un QR y actívalo desde la pestaña de Códigos QR</p></div>' :
+            cargas.map(c => `
+                <div class="card">
+                    <div class="card-header">
+                        <div><div class="card-title">${c.id}</div><div class="card-subtitle">${c.tipoCarga || 'Sin tipo'}</div></div>
+                        <span class="status-badge badge-transito">En Tránsito</span>
+                    </div>
+                    <div class="form-group"><label class="form-label">Destinatario</label><input class="form-input" value="${c.destinatario?.nombre || ''}" readonly></div>
+                    <div class="form-group"><label class="form-label">Correo</label><input class="form-input" value="${c.destinatario?.email || ''}" readonly></div>
+                    <div class="form-group"><label class="form-label">Dirección</label><input class="form-input" value="${c.destinatario?.direccion || ''}" readonly></div>
+                    <button class="btn btn-info" onclick="app.viewTransitMap('${c.id}')">🗺️ Ver Mapa</button>
+                </div>
+            `).join('')}
+        `;
+    },
+
+    renderMyReservations(container) {
+        const user = auth.currentUser;
+        const myQR = Object.values(DB.get('qrcodes')).filter(q => q.reservedBy === user.email);
+        
+        container.innerHTML = `
+            <div class="page-header"><div><h1>📋 Mis Reservas</h1><div class="breadcrumb">Códigos QR reservados por ti</div></div></div>
+            <div class="qr-grid">
+                ${myQR.length === 0 ? '<div style="text-align:center;padding:40px;color:var(--text-light);"><div style="font-size:3rem;">🔒</div><h3>Sin reservas</h3><p>Reserva códigos QR desde el panel principal</p></div>' :
+                myQR.map(qr => `
+                    <div class="qr-card reserved">
+                        <div class="qr-header">
+                            <div><div class="qr-id">${qr.id}</div><div class="qr-meta">Reservado: ${new Date(qr.reservedAt).toLocaleDateString('es-CL')}</div></div>
+                            <span class="status-badge badge-reservado">Reservado</span>
+                        </div>
+                        <div style="margin-top:12px;">
+                            ${qr.institution ? `<div style="font-size:0.85rem;"><strong>Inst:</strong> ${qr.institution}</div>` : ''}
+                            ${qr.encargado ? `<div style="font-size:0.85rem;"><strong>Enc:</strong> ${qr.encargado}</div>` : ''}
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:16px;">
+                            <button class="btn btn-sm btn-accent" onclick="app.subAdminActivateTransit('${qr.id}')">🚀 Tránsito</button>
+                            <button class="btn btn-sm btn-outline" onclick="app.subAdminReleaseQR('${qr.id}')">🔓 Liberar</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    },
+
+    renderSubAdminStats(container) {
+        const user = auth.currentUser;
+        const myCargas = Object.values(DB.get('cargas')).filter(c => c.subadminEmail === user.email);
+        const myQR = Object.values(DB.get('qrcodes')).filter(q => q.reservedBy === user.email);
+        
+        container.innerHTML = `
+            <div class="page-header"><div><h1>📊 Mis Estadísticas</h1><div class="breadcrumb">Métricas de tu actividad</div></div></div>
+            <div class="metrics-grid">
+                <div class="metric-card"><div class="metric-icon">📦</div><div class="metric-value">${myCargas.length}</div><div class="metric-label">Cargas</div></div>
+                <div class="metric-card accent"><div class="metric-icon">🔒</div><div class="metric-value">${myQR.length}</div><div class="metric-label">Reservados</div></div>
+                <div class="metric-card success"><div class="metric-icon">✅</div><div class="metric-value">${myCargas.filter(c=>c.estado==='entregado').length}</div><div class="metric-label">Entregadas</div></div>
+                <div class="metric-card danger"><div class="metric-icon">🚛</div><div class="metric-value">${myCargas.filter(c=>c.estado==='en_transito').length}</div><div class="metric-label">En Tránsito</div></div>
+            </div>
+        `;
+    },
+
+    // ==================== TRANSPORTISTA PANEL ====================
+    renderTransportistaScanner(container) {
+        container.innerHTML = `
+            <div class="page-header"><div><h1>📷 Escanear QR</h1><div class="breadcrumb">Transportista > Verificación de carga</div></div></div>
+            <div class="card text-center">
+                <div style="font-size:3rem;margin-bottom:12px;">📷</div>
+                <h2 style="margin-bottom:8px;">Escanear Código QR</h2>
+                <p style="color:var(--text-light);margin-bottom:20px;">Acerca la cámara al código de la carga biológica</p>
+                <div class="scanner-container" id="scannerContainer">
+                    <div id="reader" style="width:100%;height:100%;"></div>
+                    <div class="scanner-overlay">
+                        <div class="scanner-frame"><div class="scan-line"></div></div>
+                    </div>
+                    <div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;color:white;font-size:0.9rem;opacity:0.8;">Centra el QR en el marco</div>
+                </div>
+                <div class="mt-4">
+                    <button class="btn btn-outline btn-block" onclick="app.stopScanner(); app.showManualEntry()">✏️ Ingresar ID Manualmente</button>
+                </div>
+            </div>
+        `;
+        setTimeout(() => this.startScanner(), 300);
+    },
+
+    renderTransportistaDashboard(container) {
+        const user = auth.currentUser;
+        const myCargas = Object.values(DB.get('cargas')).filter(c => c.transportistaPhone === user.phone || c.transportistaEmail === user.email);
+        const activeCarga = myCargas.find(c => c.estado === 'en_transito');
+        
+        container.innerHTML = `
+            <div class="page-header"><div><h1>🚛 Mi Panel</h1><div class="breadcrumb">Transportista > Panel de control</div></div></div>
+            
+            ${activeCarga ? `
+            <div class="alert alert-info">
+                <span style="font-size:1.5rem;">🚛</span>
+                <div><strong>Tienes una carga activa</strong><br>${activeCarga.id} - ${activeCarga.tipoCarga || 'Carga biológica'}</div>
+            </div>
+            <div class="gps-panel">
+                <div class="gps-header"><div class="gps-dot" id="gpsDot"></div><div><div style="font-weight:700;">📍 GPS ${this.gpsWatchId ? 'Activo' : 'Inactivo'}</div></div></div>
+                <div class="gps-coords" id="gpsCoords">${this.gpsWatchId ? 'Rastreando ubicación...' : 'Activa el GPS para compartir tu ubicación'}</div>
+                <button class="btn btn-success btn-block mt-3" id="btnGPS" onclick="app.transportistaToggleGPS()">
+                    ${this.gpsWatchId ? '🛑 Detener GPS' : '🛰️ Activar GPS'}
+                </button>
+            </div>
+            ` : `
+            <div class="card text-center" style="padding:40px;">
+                <div style="font-size:3rem;margin-bottom:12px;">📷</div>
+                <h3>Sin cargas activas</h3>
+                <p style="color:var(--text-light);margin:12px 0;">Escanea un QR para verificar y activar una carga</p>
+                <button class="btn btn-primary" onclick="app.navigate('scanner')">📷 Escanear QR</button>
+            </div>
+            `}
+        `;
+    },
+
+    renderTransportistaGPS(container) {
+        container.innerHTML = `
+            <div class="page-header"><div><h1>📍 GPS Activo</h1><div class="breadcrumb">Georeferenciación en tiempo real</div></div></div>
+            <div class="gps-panel">
+                <div class="gps-header"><div class="gps-dot" id="gpsDot2"></div><div><div style="font-weight:700;">📍 Estado del GPS</div></div></div>
+                <div class="gps-coords" id="gpsCoords2">Esperando activación...</div>
+                <button class="btn btn-success btn-block mt-3" id="btnGPS2" onclick="app.transportistaToggleGPS()">🛰️ Activar GPS</button>
+            </div>
+            <div class="map-container" id="transportistaMap" style="height:400px;display:none;">
+                <iframe id="gpsIframeTrans" src="" allowfullscreen></iframe>
+            </div>
+        `;
+    },
+
+    renderTransportistaHistory(container) {
+        const user = auth.currentUser;
+        const myCargas = Object.values(DB.get('cargas')).filter(c => c.transportistaPhone === user.phone || c.transportistaEmail === user.email).sort((a,b) => new Date(b.creado) - new Date(a.creado));
+        
+        container.innerHTML = `
+            <div class="page-header"><div><h1>📋 Mis Entregas</h1><div class="breadcrumb">Historial de cargas transportadas</div></div></div>
+            <div class="card">
+                <table class="data-table">
+                    <thead><tr><th>ID</th><th>Tipo</th><th>Estado</th><th>Destino</th><th>Fecha</th></tr></thead>
+                    <tbody>
+                        ${myCargas.length === 0 ? '<tr><td colspan="5" style="text-align:center;padding:30px;">Sin entregas registradas</td></tr>' :
+                        myCargas.map(c => `<tr>
+                            <td><strong>${c.id}</strong></td>
+                            <td>${c.tipoCarga || 'N/A'}</td>
+                            <td><span class="status-badge badge-${c.estado === 'en_transito' ? 'transito' : 'entregado'}">${c.estado === 'en_transito' ? 'En Tránsito' : 'Entregado'}</span></td>
+                            <td>${c.destinatario?.institucion || 'N/A'}</td>
+                            <td>${new Date(c.creado).toLocaleDateString('es-CL')}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    },
+
+    transportistaToggleGPS() {
+        if (this.gpsWatchId) {
+            navigator.geolocation.clearWatch(this.gpsWatchId);
+            this.gpsWatchId = null;
+            this.showToast('GPS detenido', 'info');
+            this.navigate('gps');
+        } else {
+            if (!navigator.geolocation) {
+                this.showToast('Geolocalización no soportada', 'error'); return;
+            }
+            this.showToast('Iniciando GPS...', 'info');
+            this.gpsWatchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                    const coordsEl = document.getElementById('gpsCoords2') || document.getElementById('gpsCoords');
+                    if (coordsEl) coordsEl.textContent = 'Lat: ' + lat.toFixed(6) + ' | Lng: ' + lng.toFixed(6);
+                    
+                    const map = document.getElementById('transportistaMap');
+                    if (map) map.style.display = 'block';
+                    const iframe = document.getElementById('gpsIframeTrans');
+                    if (iframe) iframe.src = 'https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d2000!2d' + lng + '!3d' + lat + '!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1ses!2scl!4v1';
+                    
+                    const user = auth.currentUser;
+                    const cargas = Object.values(DB.get('cargas')).filter(c => 
+                        (c.transportistaPhone === user.phone || c.transportistaEmail === user.email) && c.estado === 'en_transito'
+                    );
+                    cargas.forEach(c => this.guardarPuntoGPS(c.id, lat, lng, pos.coords.accuracy, 'ruta'));
+                },
+                (err) => this.showToast('Error GPS: ' + err.message, 'error'),
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+            this.showToast('✅ GPS activado', 'success');
+        }
+    },
+
+    // ==================== SCANNER (shared) ====================
+    startScanner() {
+        const container = document.getElementById('scannerContainer');
+        if (!container) return;
+        if (this.scanner) { this.scanner.clear(); }
+        this.scanner = new Html5Qrcode('reader');
+        Html5Qrcode.getCameras().then(cameras => {
+            if (cameras && cameras.length > 0) {
+                this.scanner.start(cameras[cameras.length - 1].id, { fps: 10, qrbox: { width: 200, height: 200 } },
+                    (decodedText) => { this.onScanSuccess(decodedText); },
+                    (error) => {}
+                ).catch(() => this.showToast('Error al iniciar cámara', 'error'));
+            }
+        }).catch(() => this.showToast('No se pudo acceder a la cámara', 'error'));
+    },
+
+    stopScanner() {
+        if (this.scanner) {
+            this.scanner.stop().catch(() => {});
+            this.scanner.clear();
+            this.scanner = null;
+        }
+    },
+
+    onScanSuccess(decodedText) {
+        let qrId = null;
+        try { const url = new URL(decodedText); qrId = url.searchParams.get('carga'); } catch (e) { qrId = decodedText.trim(); }
+        if (qrId) {
+            this.stopScanner();
+            this.handleTransportistaQR(qrId.toUpperCase());
+        }
+    },
+
+    handleTransportistaQR(qrId) {
+        const qrcodes = DB.get('qrcodes');
+        const qr = qrcodes[qrId];
+        const cargas = DB.get('cargas');
+        const carga = cargas[qrId];
+        
+        if (!qr) { this.showToast('Código QR no encontrado', 'error'); return; }
+        
+        if (qr.status === 'disponible') {
+            this.showToast('Este QR aún no ha sido activado', 'error'); return;
+        }
+        
+        if (qr.status === 'enviado') {
+            this.showModal('🚛 Verificar Carga', `
+                <div class="form-group"><label class="form-label">ID de Carga</label><input class="form-input" value="${qrId}" readonly></div>
+                <div class="form-group"><label class="form-label">Tipo</label><input class="form-input" value="${carga?.tipoCarga || 'N/A'}" readonly></div>
+                <div class="form-group"><label class="form-label">Descripción</label><textarea class="form-textarea" readonly>${carga?.descripcion || ''}</textarea></div>
+                <div class="form-group"><label class="form-label">Destinatario</label><input class="form-input" value="${carga?.destinatario?.nombre || ''} - ${carga?.destinatario?.institucion || ''}" readonly></div>
+                <div class="form-group"><label class="form-label">Dirección</label><input class="form-input" value="${carga?.destinatario?.direccion || ''}" readonly></div>
+                <div class="alert alert-warning"><strong>⚠️ GPS obligatorio:</strong> Debes activar la georeferenciación para iniciar el tránsito.</div>
+            `, () => {
+                qr.status = 'en_transito';
+                qrcodes[qrId] = qr;
+                DB.set('qrcodes', qrcodes);
+                
+                if (carga) {
+                    carga.estado = 'en_transito';
+                    carga.transportistaPhone = auth.currentUser.phone;
+                    carga.transportistaEmail = auth.currentUser.email;
+                    carga.fechaRecoleccion = new Date().toISOString();
+                    carga.historial.push({ fecha: new Date().toISOString(), accion: 'Recolección confirmada - En tránsito', actor: auth.currentUser.name });
+                    cargas[qrId] = carga;
+                    DB.set('cargas', cargas);
+                    
+                    this.sendNotification('admin', carga.adminEmail, 'Carga en Tránsito', 'El transportista ' + auth.currentUser.name + ' ha iniciado el tránsito de ' + qrId);
+                    this.sendNotification('destinatario', carga.destinatario?.email, 'Carga en Tránsito', 'Su carga ' + qrId + ' está en camino. Puede rastrearla en tiempo real.');
+                }
+                
+                this.showToast('✅ Tránsito activado. GPS iniciado.', 'success');
+                this.transportistaToggleGPS();
+                this.navigate('dashboard');
+            });
+        } else if (qr.status === 'en_transito') {
+            this.showToast('Esta carga ya está en tránsito', 'info');
+            this.navigate('dashboard');
+        } else {
+            this.showToast('Esta carga ya fue entregada', 'info');
+        }
+    },
+
+    showManualEntry() {
+        this.showModal('✏️ Ingresar ID Manualmente', `
+            <div class="form-group">
+                <label class="form-label">ID de la Carga</label>
+                <input type="text" class="form-input" id="manualIdInput" placeholder="Ej: BIO-000001" style="text-transform:uppercase;">
+            </div>
+        `, () => {
+            const id = document.getElementById('manualIdInput').value.trim().toUpperCase();
+            if (id) this.handleTransportistaQR(id);
+        });
+    },
+
+    // ==================== NOTIFICATIONS ====================
+    sendNotification(type, to, title, body) {
+        const notifications = DB.getArray('notifications');
+        notifications.push({
+            type: type, to: to, title: title, body: body,
+            read: false, timestamp: new Date().toISOString()
+        });
+        DB.setArray('notifications', notifications);
+        
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Safer Chile - ' + title, { body: body, icon: 'S' });
+        }
+    },
+
+    // ==================== UTILITIES ====================
+    showModal(title, content, onConfirm, noConfirm = false) {
+        const overlay = document.getElementById('modalOverlay');
+        const modal = document.getElementById('modalContent');
+        modal.innerHTML = `
+            <div class="modal-header"><h3>${title}</h3></div>
+            <div class="modal-body">${content}</div>
+            ${noConfirm ? '<div class="modal-footer"><button class="btn btn-outline" onclick="app.closeModal()">Cerrar</button></div>' :
+            `<div class="modal-footer">
+                <button class="btn btn-outline" onclick="app.closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="app.confirmModal()">Confirmar</button>
+            </div>`}
+        `;
+        overlay.classList.add('active');
+        this.modalCallback = onConfirm;
+    },
+
+    closeModal() {
+        document.getElementById('modalOverlay').classList.remove('active');
+        this.modalCallback = null;
+    },
+
+    confirmModal() {
+        if (this.modalCallback) this.modalCallback();
+        this.closeModal();
+    },
+
+    showToast(message, type) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-' + type;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    },
+
+    guardarPuntoGPS(cargaId, lat, lng, accuracy, tipo) {
+        const gpsData = DB.get('gps');
+        if (!gpsData[cargaId]) gpsData[cargaId] = [];
+        gpsData[cargaId].push({ lat: lat, lng: lng, accuracy: accuracy, timestamp: new Date().toISOString(), tipo: tipo });
+        DB.set('gps', gpsData);
+    },
+
+    viewAdminDetails(email) {
+        const admin = DB.get('admins')[email];
+        if (!admin) return;
+        this.showModal('🏢 Detalle de Administrador', `
+            <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" value="${admin.name}" readonly></div>
+            <div class="form-group"><label class="form-label">Email</label><input class="form-input" value="${admin.email}" readonly></div>
+            <div class="form-group"><label class="form-label">Plan</label><input class="form-input" value="${admin.plan || 'starter'}" readonly></div>
+            <div class="form-group"><label class="form-label">QR Generados</label><input class="form-input" value="${admin.qrGenerated || 0}" readonly></div>
+            <div class="form-group"><label class="form-label">Sub-Admins</label><input class="form-input" value="${(admin.subadmins || []).length}" readonly></div>
+        `, null, true);
+    },
+};
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => { app.init(); });
+</script>
+</body>
+</html>
